@@ -1,0 +1,39 @@
+{
+  "accuracy": 1.0,
+  "num_samples": 8147,
+  "classification_report": {
+    "PlantVillage": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 8147.0
+    },
+    "accuracy": 1.0,
+    "macro avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 8147.0
+    },
+    "weighted avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 8147.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      8147
+    ]
+  ],
+  "class_names": [
+    "PlantVillage"
+  ],
+  "recommendations_for_pilot": [
+    "Probar con fotos tomadas en campo (luz natural, diferentes ángulos)",
+    "Registrar casos donde la confianza sea menor al 60%",
+    "Comparar resultados con identificación de agrónomo local",
+    "Documentar especies no reconocidas para ampliar el dataset"
+  ]
+}

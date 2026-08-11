@@ -1,0 +1,13 @@
+.venv*/
+__pycache__/
+backend/__pycache__/
+backend/models/__pycache__/
+node_modules/
+frontend/node_modules/
+frontend/dist/
+data/raw/archive.zip
+data/
+backend/data/*.db
+.env
+*.env
+data_processed.zip

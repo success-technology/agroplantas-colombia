@@ -1,0 +1,21 @@
+# Requiere Python 3.10 u 3.11 (no usar 3.14 — TensorFlow no es compatible)
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+tensorflow-cpu==2.20.0
+numpy==1.26.4
+pillow==10.2.0
+python-multipart==0.0.6
+pydantic==2.5.3
+scikit-learn==1.4.0
+pandas==2.2.0
+matplotlib==3.8.2
+seaborn==0.13.2
+opencv-python==4.9.0.80
+python-dotenv==1.0.0
+
+# Autenticación y base de datos (usuarios + historial real)
+sqlalchemy==2.0.35
+bcrypt==4.2.0
+PyJWT==2.9.0
+email-validator==2.2.0
+psycopg2-binary==2.9.10

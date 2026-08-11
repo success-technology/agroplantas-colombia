@@ -1,0 +1,12 @@
+backend/data/app.db
+backend/data/*.db
+data/raw/
+data_processed.zip
+__pycache__/
+*.pyc
+.venv311/
+.venv/
+.env
+*.ipynb_checkpoints
+frontend/node_modules/
+frontend/
