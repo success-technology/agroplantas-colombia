@@ -49,7 +49,7 @@ Base.metadata.create_all(bind=engine)
 app.include_router(auth_router.router)
 app.include_router(history_router.router)
 
-predictor = None
+predictor = ModelPredictor()
 CONFIDENCE_THRESHOLD = 0.50
 
 # Carpeta donde vive el dataset de entrenamiento ya preparado (una subcarpeta

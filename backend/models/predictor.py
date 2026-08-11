@@ -36,7 +36,7 @@ class ModelPredictor:
 
         self.model_loaded = False
         self.load_model(model_path)
-        #self.load_species_model()
+        self.load_species_model()
 
     def load_model(self, model_path: str | None = None):
         keras_path = MODELS_DIR / "plant_classifier.keras"
