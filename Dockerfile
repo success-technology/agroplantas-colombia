@@ -1,13 +1,20 @@
 # Dockerfile del backend de AgroPlantas Colombia
 #
-# Pensado para Hugging Face Spaces (SDK: Docker), que expone el puerto 7860
-# por defecto. También funciona en cualquier otro host que soporte Docker
-# (Render, Fly.io, Cloud Run, un VPS) — solo ajusta el puerto si hace falta.
+# Desplegado en Render.com (Web Service, SDK Docker). Render asigna el
+# puerto dinámicamente vía la variable de entorno $PORT — por eso el CMD
+# usa esa variable en vez de un número fijo. Si $PORT no está definida
+# (por ejemplo al correr `docker run` en tu PC para pruebas locales), usa
+# 8000 como respaldo.
 #
 # IMPORTANTE: este Dockerfile vive en la RAÍZ del proyecto (al mismo nivel
 # que las carpetas backend/ y models/), porque main.py resuelve la ruta del
 # modelo como "un nivel arriba de backend/" — igual que en tu equipo local.
 # NO subas este Dockerfile dentro de backend/, ni muevas la carpeta models/.
+#
+# NOTA sobre --loop asyncio: es un fix necesario, no cosmético. uvicorn[standard]
+# usa uvloop por defecto, que choca con el threading interno de TensorFlow en
+# C++ y causa un Segmentation fault silencioso al arrancar (confirmado con
+# pruebas exhaustivas — ver notas del proyecto). No quitar este flag.
 
 FROM python:3.11-slim
 
@@ -29,8 +36,6 @@ COPY backend/ backend/
 
 WORKDIR /app/backend
 
-# Hugging Face Spaces espera que la app escuche en el puerto 7860
-ENV PORT=7860
-EXPOSE 7860
+EXPOSE 8000
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--loop", "asyncio"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --loop asyncio"]
