@@ -46,7 +46,6 @@ app.add_middleware(
 from supported_species import get_supported_species
 
 predictor = ModelPredictor()
-CONFIDENCE_THRESHOLD = 0.50
 
 Base.metadata.create_all(bind=engine)
 app.include_router(auth_router.router)
