@@ -15,12 +15,9 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 _sqlite_url = f"sqlite:///{os.path.join(DATA_DIR, 'app.db')}"
-DATABASE_URL = os.environ.get("DATABASE_URL", _sqlite_url)
-
-# Algunos proveedores (Supabase, Heroku, Render) entregan la URL con el
-# prefijo "postgres://", pero SQLAlchemy moderno espera "postgresql://".
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./agroplantas.db")
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
 _is_sqlite = DATABASE_URL.startswith("sqlite")
 
