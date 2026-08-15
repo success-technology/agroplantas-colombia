@@ -2,11 +2,12 @@ import json
 import os
 from pathlib import Path
 
+
 import numpy as np
 import tensorflow as tf
 from PIL import Image
 from tensorflow.keras import layers, models
-from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.applications import MobileNetV2 # type: ignore
 
 from image_utils import tta_variants
 
@@ -158,11 +159,18 @@ class ModelPredictor:
         return state_probs
 
     def predict_image(self, pil_image: Image.Image) -> np.ndarray:
-        """Predicción con TTA (promedio de varias vistas de la imagen)."""
-        variants = tta_variants(pil_image)
-        batch = np.stack(variants, axis=0)
-        preds = self.predict(batch)
-        return np.mean(preds, axis=0)
+        """Predicción de una sola imagen."""
+    image = pil_image.convert("RGB").resize((IMG_SIZE, IMG_SIZE))
+    image_array = np.asarray(image, dtype=np.float32)
+
+    # MobileNetV2 espera el preprocesamiento [-1, 1].
+    image_array = tf.keras.applications.mobilenet_v2.preprocess_input(
+        image_array
+    )
+
+    batch = np.expand_dims(image_array, axis=0)
+
+    preds = self.predict(batch)
 
     def get_class_names(self) -> list[str]:
         return self.class_names
