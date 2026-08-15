@@ -55,8 +55,10 @@ app.include_router(history_router.router)
 # Ahora TensorFlow vive aislado en ml_service/, y este backend le pide las
 # predicciones por HTTP. En local, ambos servicios corren en puertos
 # distintos (backend en 8000, ml_service en 8001 por defecto).
-ML_SERVICE_URL = os.environ.get("ML_SERVICE_URL", "http://localhost:8001").rstrip("/")
-
+ML_SERVICE_URL = os.environ.get(
+    "ML_SERVICE_URL",
+    "https://agroplantas-ml.onrender.com"
+).rstrip("/")
 CONFIDENCE_THRESHOLD = 0.50
 
 # Carpeta donde vive el dataset de entrenamiento ya preparado (una subcarpeta
