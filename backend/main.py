@@ -199,18 +199,39 @@ async def predict(file: UploadFile = File(...)):
 
         # La predicción real la hace el microservicio ML (aislado, con
         # TensorFlow) — este backend solo reenvía la imagen y procesa la
-        # respuesta.
-        try:
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                ml_response = await client.post(
-                    f"{ML_SERVICE_URL}/predict",
-                    files={"file": (file.filename, contents, file.content_type)},
-                )
-        except httpx.HTTPError as e:
+        # respuesta. Reintenta con espera creciente porque el ml_service
+        # también es un plan gratis de Render y se duerme tras inactividad:
+        # el primer intento puede toparse con el 502 que da el propio proxy
+        # de Render mientras el servicio despierta (puede tardar 30-60s en
+        # cargar TensorFlow + los modelos desde cero).
+        ml_response = None
+        last_error = None
+        for intento, espera in enumerate([0, 5, 15], start=1):
+            if espera:
+                import asyncio
+                await asyncio.sleep(espera)
+            try:
+                async with httpx.AsyncClient(timeout=90.0) as client:
+                    ml_response = await client.post(
+                        f"{ML_SERVICE_URL}/predict",
+                        files={"file": (file.filename, contents, file.content_type)},
+                    )
+                if ml_response.status_code < 500:
+                    break
+                last_error = f"HTTP {ml_response.status_code} del ml_service"
+            except httpx.HTTPError as e:
+                last_error = str(e)
+                ml_response = None
+
+        if ml_response is None or ml_response.status_code >= 500:
             raise HTTPException(
                 status_code=503,
-                detail=f"No se pudo conectar con el servicio de identificación: {e}",
-            ) from e
+                detail=(
+                    "El servicio de identificación está despertando (puede tardar hasta "
+                    f"1 minuto tras un rato sin uso). Intenta de nuevo en unos segundos. "
+                    f"Detalle: {last_error}"
+                ),
+            )
 
         if ml_response.status_code != 200:
             try:
