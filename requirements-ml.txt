@@ -1,0 +1,12 @@
+# Requisitos del microservicio de ML (ml_service/) — SIN nada de base de
+# datos a propósito (ni psycopg, ni sqlalchemy). Ese es justo el punto:
+# aislar TensorFlow en un proceso que nunca carga un driver de Postgres.
+#
+# Requiere Python 3.10 u 3.11 (no usar 3.14 — TensorFlow no es compatible)
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+tensorflow-cpu==2.20.0
+numpy==1.26.4
+pillow==10.2.0
+python-multipart==0.0.6
+pydantic==2.5.3

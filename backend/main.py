@@ -1,17 +1,17 @@
-import io
 import json
 import os
 import random
 import time
 from pathlib import Path
 
+import httpx
+import numpy as np
 import uvicorn
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from PIL import Image
 
-from models.predictor import ModelPredictor
+from class_names_util import load_class_names
 from prediction_utils import analyze_predictions
 from recommendations import generate_recommendations
 from schemas import AnalysisSummary, PredictionResponse, PredictionResult, Probability
@@ -23,7 +23,7 @@ from routers import history as history_router
 app = FastAPI(
     title="AgroPlantas Colombia API",
     description="Identificación de plantas agrícolas y malezas con IA",
-    version="2.1.0",
+    version="2.2.0",
 )
 
 # En producción, define la variable de entorno ALLOWED_ORIGINS con la URL
@@ -49,7 +49,14 @@ Base.metadata.create_all(bind=engine)
 app.include_router(auth_router.router)
 app.include_router(history_router.router)
 
-predictor = ModelPredictor()
+# URL del microservicio de ML (backend/main.py ya NO carga TensorFlow él
+# mismo — se descubrió que TensorFlow + una conexión real a Postgres en el
+# mismo proceso causaba un Segmentation fault reproducible en Render.
+# Ahora TensorFlow vive aislado en ml_service/, y este backend le pide las
+# predicciones por HTTP. En local, ambos servicios corren en puertos
+# distintos (backend en 8000, ml_service en 8001 por defecto).
+ML_SERVICE_URL = os.environ.get("ML_SERVICE_URL", "http://localhost:8001").rstrip("/")
+
 CONFIDENCE_THRESHOLD = 0.50
 
 # Carpeta donde vive el dataset de entrenamiento ya preparado (una subcarpeta
@@ -96,7 +103,7 @@ def find_sample_image(class_name: str) -> Path | None:
 async def root():
     return {
         "message": "AgroPlantas Colombia — API de identificación vegetal",
-        "version": "2.1.0",
+        "version": "2.2.0",
         "status": "operational",
         "docs": "/docs",
     }
@@ -110,20 +117,29 @@ async def health_check():
         with open(metrics_path, encoding="utf-8") as f:
             metrics = json.load(f)
 
+    class_names = load_class_names()
+
+    ml_service_status = "unreachable"
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{ML_SERVICE_URL}/health")
+            if resp.status_code == 200:
+                ml_service_status = resp.json()
+    except httpx.HTTPError:
+        pass
+
     return {
         "status": "healthy",
-        "model_loaded": predictor.model is not None,
-        "model_trained": predictor.is_ready(),
-        "classes": predictor.get_class_names(),
-        "num_classes": len(predictor.get_class_names()),
+        "ml_service": ml_service_status,
+        "classes": class_names,
+        "num_classes": len(class_names),
         "training_metrics": metrics or None,
     }
 
 
-
 @app.get("/api/classes")
 async def list_classes():
-    return {"classes": predictor.get_class_names()}
+    return {"classes": load_class_names()}
 
 
 @app.get("/api/supported-species")
@@ -135,7 +151,7 @@ async def supported_species():
 async def plant_info(class_name: str):
     """Ficha completa de una clase del catálogo (sin necesidad de subir foto).
     Usada por la Biblioteca de plantas para el detalle de cada estado."""
-    if class_name not in predictor.get_class_names():
+    if class_name not in load_class_names():
         raise HTTPException(status_code=404, detail="Esa clase no existe en el modelo actual")
 
     # Confianza fija y alta: esto es una ficha de catálogo, no una predicción real,
@@ -181,16 +197,31 @@ async def predict(file: UploadFile = File(...)):
         if len(contents) > 10 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="Imagen demasiado grande (máx. 10 MB)")
 
-        image = Image.open(io.BytesIO(contents))
-
-        if not predictor.is_ready():
+        # La predicción real la hace el microservicio ML (aislado, con
+        # TensorFlow) — este backend solo reenvía la imagen y procesa la
+        # respuesta.
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                ml_response = await client.post(
+                    f"{ML_SERVICE_URL}/predict",
+                    files={"file": (file.filename, contents, file.content_type)},
+                )
+        except httpx.HTTPError as e:
             raise HTTPException(
                 status_code=503,
-                detail="Modelo no entrenado. Ejecuta prepare_dataset.py y train.py",
-            )
+                detail=f"No se pudo conectar con el servicio de identificación: {e}",
+            ) from e
 
-        predictions = predictor.predict_image(image)
-        class_names = predictor.get_class_names()
+        if ml_response.status_code != 200:
+            try:
+                detail = ml_response.json().get("detail", ml_response.text)
+            except Exception:
+                detail = ml_response.text
+            raise HTTPException(status_code=ml_response.status_code, detail=detail)
+
+        ml_data = ml_response.json()
+        class_names = ml_data["class_names"]
+        predictions = np.array(ml_data["probabilities"], dtype=np.float32)
 
         if len(predictions) != len(class_names):
             raise HTTPException(status_code=500, detail="Desajuste entre modelo y clases")
@@ -253,4 +284,4 @@ async def predict(file: UploadFile = File(...)):
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), reload=True)
