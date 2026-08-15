@@ -38,16 +38,16 @@ def preprocess_pil(img: Image.Image, size: int = IMG_SIZE) -> np.ndarray:
 
 
 def tta_variants(img: Image.Image) -> list[np.ndarray]:
-    """Variantes para promedio de predicciones (más robusto en fotos de campo)."""
-    base = center_crop_square(img)
-    variants: list[Image.Image] = [
-        base,
-        base.transpose(Image.FLIP_LEFT_RIGHT),
-    ]
-    # Recorte ligeramente más cerrado (zoom)
-    w, h = base.size
-    margin = int(min(w, h) * 0.08)
-    zoomed = base.crop((margin, margin, w - margin, h - margin))
-    variants.append(zoomed)
+    """UNA sola vista de la imagen (sin espejo ni recorte extra).
 
-    return [preprocess_pil(v) for v in variants]
+    Antes promediaba 3 variantes (normal + espejo + recorte de zoom) para
+    ser más robusto con fotos de campo. Se redujo a 1 sola porque en la CPU
+    gratuita y compartida de Render, 3 variantes × 2 modelos (especie +
+    estado) = 6 pasadas del modelo por foto tardaban lo suficiente como
+    para que el propio proxy de Render cortara la conexión con un 502
+    (confirmado: el timeout ocurría incluso llamando al ml_service
+    directamente, sin el backend de por medio). Si en el futuro se aloja en
+    un plan con más CPU, vale la pena reactivar el promedio de variantes.
+    """
+    base = center_crop_square(img)
+    return [preprocess_pil(base)]
