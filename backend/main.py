@@ -201,74 +201,23 @@ async def predict(file: UploadFile = File(...)):
         # TensorFlow) — este backend solo reenvía la imagen y procesa la
         # respuesta.
         try:
-    async with httpx.AsyncClient(
-        timeout=httpx.Timeout(
-            connect=10.0,
-            read=120.0,
-            write=30.0,
-            pool=10.0,
-        )
-    ) as client:
-        ml_response = await client.post(
-            f"{ML_SERVICE_URL}/predict",
-            files={
-                "file": (
-                    file.filename or "image.jpg",
-                    contents,
-                    file.content_type or "image/jpeg",
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                ml_response = await client.post(
+                    f"{ML_SERVICE_URL}/predict",
+                    files={"file": (file.filename, contents, file.content_type)},
                 )
-            },
-        )
+        except httpx.HTTPError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"No se pudo conectar con el servicio de identificación: {e}",
+            ) from e
 
-except httpx.ConnectError as e:
-    print(f"[ML_SERVICE] Error de conexión: {e}")
-    raise HTTPException(
-        status_code=503,
-        detail="El backend no pudo conectarse con el servicio de IA.",
-    ) from e
-
-except httpx.TimeoutException as e:
-    print(f"[ML_SERVICE] Timeout: {e}")
-    raise HTTPException(
-        status_code=504,
-        detail="El servicio de IA tardó demasiado en responder.",
-    ) from e
-
-except httpx.HTTPError as e:
-    print(f"[ML_SERVICE] Error HTTP: {type(e).__name__}: {e}")
-    raise HTTPException(
-        status_code=503,
-        detail=f"Error comunicando con el servicio de IA: {e}",
-    ) from e
-
-except Exception as e:
-    import traceback
-    traceback.print_exc()
-    raise HTTPException(
-        status_code=500,
-        detail=f"Error interno comunicando con el servicio de IA: {e}",
-    ) from e
-
-
-# El ML service respondió, así que ahora comprobamos su respuesta.
-if ml_response.status_code != 200:
-    print(
-        f"[ML_SERVICE] HTTP {ml_response.status_code}: "
-        f"{ml_response.text}"
-    )
-
-    try:
-        detail = ml_response.json().get(
-            "detail",
-            ml_response.text,
-        )
-    except Exception:
-        detail = ml_response.text
-
-    raise HTTPException(
-        status_code=502,
-        detail=f"ML Service respondió HTTP {ml_response.status_code}: {detail}",
-    )
+        if ml_response.status_code != 200:
+            try:
+                detail = ml_response.json().get("detail", ml_response.text)
+            except Exception:
+                detail = ml_response.text
+            raise HTTPException(status_code=ml_response.status_code, detail=detail)
 
         ml_data = ml_response.json()
         class_names = ml_data["class_names"]
