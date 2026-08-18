@@ -53,7 +53,7 @@ export const AjustesPage: React.FC = () => {
               <div>
                 <p className="text-gray-500 text-xs mb-1">Estado</p>
                 <p className="flex items-center gap-1.5 font-medium text-gray-900">
-                  {health.model_loaded ? (
+                  {health.model_trained ? (
                     <>
                       <FiCheckCircle className="w-4 h-4 text-green-600" /> Modelo cargado
                     </>
