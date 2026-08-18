@@ -136,6 +136,7 @@ async def health_check():
         "classes": class_names,
         "num_classes": len(class_names),
         "training_metrics": metrics or None,
+        "model_trained": bool(metrics) and isinstance(ml_service_status, dict),
     }
 
 
