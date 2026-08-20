@@ -32,7 +32,7 @@ def _load_trained_plant_keys() -> set[str]:
         return set()
 
     plant_keys: set[str] = set()
-    for name in class_names:
+    for name in class_names.values():
         plant_key = name.split("___", 1)[0].strip()
         plant_keys.add(plant_key)
     return plant_keys

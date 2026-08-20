@@ -123,7 +123,7 @@ async def health_check():
 
     ml_service_status = "unreachable"
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient(timeout=3.0) as client:
             resp = await client.get(f"{ML_SERVICE_URL}/health")
             if resp.status_code == 200:
                 ml_service_status = resp.json()

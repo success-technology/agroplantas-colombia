@@ -67,7 +67,7 @@ export const ResultsCard: React.FC<ResultsCardProps> = ({ prediction, imageUrl }
             </h2>
             <p className="text-white/90 text-base max-w-xl">
               Esta planta (por ejemplo orégano, café, yuca, plátano) <strong>no está en el catálogo</strong> con
-              el que se entrenó el modelo. No es un error suyo: el sistema solo conoce 14 cultivos del dataset PlantVillage.
+              el que se entrenó el modelo. No es un error suyo: el sistema reconoce {(a?.supportedSpecies ?? []).length || 21} cultivos.
             </p>
             {a?.weakGuessSpecies && (
               <p className="mt-3 text-amber-200 text-sm bg-black/20 rounded-lg p-3">
