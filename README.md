@@ -1,158 +1,163 @@
 # AgroPlantas Colombia
 
-Plataforma de identificación automática de plantas agrícolas y malezas mediante **Redes Neuronales Convolucionales (CNN)**, orientada al monitoreo de cultivos en Colombia.
+Plataforma de identificación automática de plantas agrícolas y detección de plagas/enfermedades mediante **Redes Neuronales Convolucionales (CNN)**, orientada al monitoreo de cultivos en Colombia.
+
+**En producción:** https://agroplantas-colombia.vercel.app
 
 ## Objetivos cubiertos
 
 | Objetivo | Implementación |
 |----------|----------------|
-| Dataset estructurado | `scripts/prepare_dataset.py` + carpeta `data/` |
-| Modelo CNN | MobileNetV2 + transfer learning en `scripts/train.py` |
-| Aplicación web | React + FastAPI (`frontend/` + `backend/`) |
-| Evaluación piloto | `scripts/evaluate.py` + `docs/EVALUACION_PILOTO.md` |
+| Dataset estructurado | `scripts/prepare_dataset.py` — 93 clases, 21 especies, 16+ fuentes |
+| Modelo CNN de dos etapas | MobileNetV2 (especie → estado) en `scripts/train.py` |
+| Aplicación web | React + FastAPI, con autenticación real y persistencia en base de datos |
+| Despliegue en producción | Vercel (frontend) + Render (backend + ml_service) + Supabase (PostgreSQL) |
 
-## Inicio rápido (2 días)
+## Arquitectura
 
-### Día 1 — Dataset y entrenamiento
+El sistema se divide en **tres servicios independientes**:
 
-1. **Descargar dataset de Kaggle** (tag [Plants](https://www.kaggle.com/datasets?tags=7306-Plants)):
+- **`backend/`** — FastAPI. Autenticación de usuarios (JWT + bcrypt), historial de identificaciones, catálogo de plantas y biblioteca. Reenvía cada imagen al `ml_service` por HTTP; no carga TensorFlow.
+- **`ml_service/`** — FastAPI. Aloja exclusivamente el modelo entrenado (TensorFlow/Keras) y expone `/health` y `/predict`. Sin dependencia de base de datos.
+- **`frontend/`** — React + Vite + TypeScript.
 
-   Recomendados para empezar:
-   - [Plant Seedlings Dataset](https://www.kaggle.com/competitions/plant-seedlings-classification) — 12 especies/malezas
-   - [PlantVillage](https://www.kaggle.com/datasets/abdallahalidev/plantvillage-dataset) — cultivos + enfermedades
-   - [New Plant Diseases](https://www.kaggle.com/datasets/vipoooool/new-plant-diseases-dataset)
+> Esta separación (backend / ml_service) no fue el diseño inicial: se adoptó tras detectar que TensorFlow y una conexión activa a PostgreSQL en el mismo proceso causaban un *segmentation fault* reproducible en producción.
 
-2. Descomprimir en `data/raw/`
-
-3. Preparar y entrenar:
+## Inicio rápido (desarrollo local)
 
 > **Importante:** Usa **Python 3.11** (no 3.14). En Windows: `py -3.11`
 
+### 1. Backend
+
 ```powershell
+cd backend
 py -3.11 -m venv .venv311
 .\.venv311\Scripts\Activate.ps1
-pip install -r requirements.txt
-
-python scripts/prepare_dataset.py --input data/raw
-python scripts/train.py --data data/processed --epochs 15
-python scripts/evaluate.py
+pip install -r ..\requirements-backend.txt
+uvicorn main:app --reload --port 8000
 ```
 
-### Día 2 — Aplicación web
+### 2. Servicio de inferencia (ml_service)
 
 ```powershell
-# Terminal 1 — Backend
-cd backend
-uvicorn main:app --reload --port 8000
+cd ml_service
+pip install -r ..\requirements-ml.txt
+uvicorn main:app --reload --port 8001
+```
 
-# Terminal 2 — Frontend
+### 3. Frontend
+
+```powershell
 cd frontend
 npm install
+```
+
+Crea el archivo `frontend/.env` (no se sube a git) con:
+
+```
+VITE_API_URL=http://localhost:8000
+```
+
+```powershell
 npm run dev
 ```
 
 Abrir **http://localhost:3000** y subir una imagen de planta.
 
-O usar el script automático:
+> Si `backend` no encuentra el `ml_service` local, revisa la variable de entorno `ML_SERVICE_URL` (por defecto apunta al servicio en Render).
+
+### Entrenamiento del modelo (opcional — el modelo ya entrenado vive en `models/`)
 
 ```powershell
-.\iniciar.ps1
+python scripts/prepare_dataset.py --input data/raw
+python scripts/train.py --data data/processed --epochs 15
+python scripts/evaluate.py
 ```
 
 ## Estructura del proyecto
 
-PROTOTIPO PLANTAS IA/
+```
+agroplantas-colombia/
 │
-├── README.md                 # Guía principal del proyecto
-├── requirements.txt          # Dependencias Python (TensorFlow, FastAPI…)
-├── iniciar.ps1               # Arranque rápido backend + frontend
-├── docker-compose.yml        # Despliegue con Docker
-├── .gitignore
+├── README.md
+├── requirements-backend.txt    # Dependencias del backend (SIN TensorFlow, a propósito)
+├── requirements-ml.txt         # Dependencias del ml_service (incluye TensorFlow)
+├── docker-compose.yml
 │
-├── backend/                  # API e inferencia con IA
-│   ├── main.py               # FastAPI — endpoints /api/predict, /health
-│   ├── schemas.py            # Modelos de respuesta (Pydantic)
-│   ├── recommendations.py    # Fichas agronómicas por clase
-│   ├── prediction_utils.py   # Agrupa por especie + detecta “no reconocida”
-│   ├── plant_knowledge.py    # Nombres en español, enfermedades, tratamientos
-│   ├── supported_species.py  # Lista de 14 cultivos soportados
-│   ├── image_utils.py        # Preprocesamiento y TTA de imágenes
-│   ├── Dockerfile
-│   ├── data/
-│   │   └── plant_catalog.json  # Info detallada por cultivo/enfermedad
+├── backend/                    # API transaccional (sin TensorFlow)
+│   ├── main.py                  # Endpoints /api/predict, /health, /api/plant-info, etc.
+│   ├── database.py               # Conexión SQLAlchemy (PostgreSQL en producción)
+│   ├── db_models.py
+│   ├── auth_utils.py / auth_deps.py
+│   ├── routers/
+│   │   ├── auth.py               # Registro / login (JWT + bcrypt)
+│   │   └── history.py            # Historial de identificaciones por usuario
+│   ├── schemas.py / schemas_auth.py
+│   ├── recommendations.py        # Fichas agronómicas por clase
+│   ├── prediction_utils.py       # Agrupa por especie + detecta "no reconocida"
+│   ├── plant_knowledge.py        # Nombres en español, enfermedades, tratamientos
+│   ├── supported_species.py      # Especies reales que el modelo entrenado reconoce
+│   └── class_names_util.py
+│
+├── ml_service/                 # Servicio de inferencia aislado (TensorFlow/Keras)
+│   ├── main.py                   # Endpoints /health, /predict
+│   ├── image_utils.py            # Preprocesamiento y TTA de imágenes
 │   └── models/
-│       └── predictor.py      # Carga MobileNetV2 y predice
+│       └── predictor.py          # Carga el modelo y predice
 │
-├── frontend/                 # Aplicación web (React + Vite)
-│   ├── index.html
-│   ├── package.json
-│   ├── vite.config.ts
-│   ├── tailwind.config.js
-│   ├── Dockerfile
-│   ├── docs/
-│   │   └── METODOLOGIA.md
+├── frontend/                   # Aplicación web (React + Vite + TypeScript)
+│   ├── .env                     # VITE_API_URL (no se sube a git)
 │   └── src/
-│       ├── main.tsx
-│       ├── App.tsx
-│       ├── types.ts
-│       ├── index.css
+│       ├── pages/                # IdentificarPage, AjustesPage, BibliotecaPage, etc.
+│       ├── lib/                  # authStore, historyStore
 │       └── components/
-│           ├── Header.tsx
-│           ├── UploadZone.tsx      # Subir imagen
-│           ├── ResultsCard.tsx     # Resultado (especie, plaga, enfermedad)
+│           ├── UploadZone.tsx
+│           ├── ResultsCard.tsx
 │           ├── ModelStatus.tsx
-│           ├── FeatureGrid.tsx
-│           └── LoadingSpinner.tsx
+│           └── ...
 │
-├── scripts/                  # Pipeline de ML
-│   ├── prepare_dataset.py    # raw → processed (train/val/test)
-│   ├── train.py              # Entrena la CNN
-│   └── evaluate.py           # Métricas y reporte
+├── scripts/                    # Pipeline de entrenamiento
+│   ├── prepare_dataset.py
+│   ├── train.py
+│   └── evaluate.py
 │
-├── data/
-│   ├── raw/                  # Dataset Kaggle descomprimido
-│   │   └── PlantVillage/
-│   │       ├── train/        # Carpetas: Tomato___healthy, etc.
-│   │       └── val/
-│   └── processed/            # Generado por prepare_dataset.py
-│       ├── train/            # 38 clases × imágenes
-│       ├── val/
-│       └── test/
-│
-├── models/                   # Artefactos entrenados (no subir a git si son grandes)
+├── models/                     # Artefactos entrenados
+│   ├── species_classifier.keras
+│   ├── state_best_weights.keras
 │   ├── plant_classifier.keras
-│   ├── best_weights.keras
-│   ├── class_names.json
-│   ├── training_metrics.json
-│   └── evaluation_report.json
+│   ├── class_names.json         # {"0": "Algodon___Bacteriosis", ...}
+│   └── training_metrics.json
 │
 └── docs/
-    ├── GUIA_DATASET.md       # Cómo descargar y preparar Kaggle
-    └── EVALUACION_PILOTO.md  # Protocolo de pruebas con usuarios
+```
 
-## API
+## API (backend)
 
 | Endpoint | Descripción |
 |----------|-------------|
-| `GET /health` | Estado del modelo y clases |
-| `GET /api/classes` | Lista de especies |
+| `GET /health` | Estado del backend, del ml_service y del modelo |
+| `GET /api/classes` | Lista completa de las 93 clases |
+| `GET /api/supported-species` | Las 21 especies que el modelo reconoce |
 | `POST /api/predict` | Subir imagen → predicción |
+| `GET /api/plant-info/{class_name}` | Ficha agronómica completa de una clase |
+| `POST /auth/register` / `/auth/login` | Autenticación de usuarios |
+| `GET /history` | Historial de identificaciones del usuario autenticado |
 | `GET /docs` | Documentación Swagger |
 
-## Docker
+## Despliegue en producción
 
-```powershell
-docker-compose up --build
-```
+- **Frontend:** Vercel (Root Directory: `frontend`)
+- **Backend:** Render.com — Web Service, variable `ML_SERVICE_URL` apuntando al ml_service
+- **Servicio de inferencia:** Render.com — Web Service independiente, sin base de datos
+- **Base de datos:** Supabase (PostgreSQL)
 
 ## Notas
 
-- Sin modelo entrenado, la API funciona en **modo demostración** (arquitectura base).
-- Tras entrenar, se generan `models/plant_classifier.keras` y `models/class_names.json`.
-- Las recomendaciones agronómicas están en `backend/data/plant_catalog.json` (ampliable).
+- Los datasets crudos (`data/raw/`, `data/processed/`) **no se suben a git** por su tamaño; solo el modelo ya entrenado (`models/*.keras`) viaja en el repositorio.
+- Si `model_trained` en `/health` no está en `true`, el frontend muestra un aviso de modo demostración (normalmente porque el `ml_service` de Render está dormido tras inactividad — su plan gratuito hiberna a los 15 minutos).
+- Las recomendaciones agronómicas se generan dinámicamente en `backend/recommendations.py` a partir de `plant_knowledge.py`.
+- El `requirements.txt` en la raíz del proyecto es una versión anterior, previa a separar backend y ml_service; para desarrollo local, usa `requirements-backend.txt` y `requirements-ml.txt` por separado.
 
 ## Licencia
 
 Prototipo académico — uso educativo e investigación agrícola.
-# PROTOTIPO-PLANTAS-IA
-# PROTOTIPO-PLANTAS-IA
