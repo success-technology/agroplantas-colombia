@@ -48,7 +48,6 @@ uvicorn main:app --reload --port 8001
 ### 3. Frontend
 
 ```powershell
-cd frontend
 npm install
 ```
 
@@ -80,12 +79,12 @@ python scripts/evaluate.py
 agroplantas-colombia/
 │
 ├── README.md
-├── requirements-backend.txt    # Dependencias del backend (SIN TensorFlow, a propósito)
-├── requirements-ml.txt         # Dependencias del ml_service (incluye TensorFlow)
+├── requirements-backend.txt      # Dependencias del backend (SIN TensorFlow, a propósito)
+├── requirements-ml.txt           # Dependencias del ml_service (incluye TensorFlow)
 ├── docker-compose.yml
 │
-├── backend/                    # API transaccional (sin TensorFlow)
-│   ├── main.py                  # Endpoints /api/predict, /health, /api/plant-info, etc.
+├── backend/                      # API transaccional (sin TensorFlow)
+│   ├── main.py                   # Endpoints /api/predict, /health, /api/plant-info, etc.
 │   ├── database.py               # Conexión SQLAlchemy (PostgreSQL en producción)
 │   ├── db_models.py
 │   ├── auth_utils.py / auth_deps.py
@@ -99,14 +98,14 @@ agroplantas-colombia/
 │   ├── supported_species.py      # Especies reales que el modelo entrenado reconoce
 │   └── class_names_util.py
 │
-├── ml_service/                 # Servicio de inferencia aislado (TensorFlow/Keras)
+├── ml_service/                   # Servicio de inferencia aislado (TensorFlow/Keras)
 │   ├── main.py                   # Endpoints /health, /predict
 │   ├── image_utils.py            # Preprocesamiento y TTA de imágenes
 │   └── models/
 │       └── predictor.py          # Carga el modelo y predice
 │
-├── frontend/                   # Aplicación web (React + Vite + TypeScript)
-│   ├── .env                     # VITE_API_URL (no se sube a git)
+├── frontend/                     # Aplicación web (React + Vite + TypeScript)
+│   ├── .env                      # VITE_API_URL (no se sube a git)
 │   └── src/
 │       ├── pages/                # IdentificarPage, AjustesPage, BibliotecaPage, etc.
 │       ├── lib/                  # authStore, historyStore
@@ -116,17 +115,17 @@ agroplantas-colombia/
 │           ├── ModelStatus.tsx
 │           └── ...
 │
-├── scripts/                    # Pipeline de entrenamiento
+├── scripts/                      # Pipeline de entrenamiento
 │   ├── prepare_dataset.py
 │   ├── train.py
 │   └── evaluate.py
 │
-├── models/                     # Artefactos entrenados
+├── models/                       # Artefactos entrenados
 │   ├── species_classifier.keras
 │   ├── state_best_weights.keras
 │   ├── plant_classifier.keras
-│   ├── class_names.json         # {"0": "Algodon___Bacteriosis", ...}
-│   └── training_metrics.json
+│   ├── class_names.json          # {"0": "Algodon___Bacteriosis", ...}
+│   └── training_metrics.json 
 │
 └── docs/
 ```

@@ -1,10 +1,12 @@
 // frontend/src/pages/AuthPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiUser, FiMail, FiLock, FiLogOut } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiLogOut, FiMoon, FiSun } from 'react-icons/fi';
 import { getUser, login, register, logout, UserProfile } from '../lib/authStore';
+import { useTheme } from '../lib/themeStore';
 
 export const AuthPage: React.FC = () => {
+  const { darkMode, toggleDarkMode } = useTheme();
   const navigate = useNavigate();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
@@ -54,6 +56,20 @@ export const AuthPage: React.FC = () => {
           </span>
           <h1 className="text-xl font-bold text-gray-900 mb-1">Hola, {user.nombre || user.email}</h1>
           <p className="text-gray-500 text-sm mb-6">{user.email}</p>
+          <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-700 py-4 mb-2 text-sm">
+            <span className="text-gray-700 dark:text-gray-300">Modo oscuro</span>
+            <button
+              type="button"
+              onClick={toggleDarkMode}
+              aria-label={darkMode ? 'Activar modo claro' : 'Activar modo oscuro'}
+              aria-pressed={darkMode}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${darkMode ? 'bg-[#DDA15E]' : 'bg-gray-300'}`}
+            >
+              <span className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white shadow transition-transform ${darkMode ? 'translate-x-5' : 'translate-x-0.5'}`}>
+                {darkMode ? <FiMoon className="w-3 h-3 text-[#283618]" /> : <FiSun className="w-3 h-3 text-amber-500" />}
+              </span>
+            </button>
+          </div>
           <button
             onClick={() => navigate('/')}
             className="w-full bg-[#283618] hover:bg-[#1e290f] text-white rounded-lg py-2.5 text-sm font-medium mb-2"

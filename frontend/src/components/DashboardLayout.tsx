@@ -4,6 +4,7 @@ import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { FiFacebook, FiInstagram,FiYoutube} from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
+import { AgroChatbot } from './AgroChatbot';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -11,11 +12,11 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-[#FEFAE0] flex flex-col">
+    <div className="min-h-screen bg-[#FEFAE0] dark:bg-[#182014] text-gray-900 dark:text-gray-100 flex flex-col transition-colors">
       <Header />
       <div className="flex flex-1">
         <Sidebar />
-        <main className="flex-1 min-w-0">{children}</main>
+        <main className="flex-1 min-w-0 overflow-x-hidden">{children}</main>
       </div>
       <footer className="bg-[#283618] text-[#FEFAE0]/80 py-4 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-center gap-4">
@@ -67,6 +68,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           </div>
         </div>
       </footer>
+      <AgroChatbot />
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { FiChevronDown, FiUser, FiHome, FiSearch, FiFileText, FiBook, FiFeather, FiLogOut } from 'react-icons/fi';
+import { FiChevronDown, FiUser, FiHome, FiSearch, FiFileText, FiBook, FiFeather, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
 import { getUser, logout, UserProfile } from '../lib/authStore';
 
 const navItems = [
@@ -13,6 +13,7 @@ const navItems = [
 
 export const Header: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const navigate = useNavigate();
 
@@ -61,6 +62,15 @@ export const Header: React.FC = () => {
         </nav>
 
         <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen((current) => !current)}
+            className="md:hidden text-[#FEFAE0]"
+            aria-label={mobileNavOpen ? 'Cerrar navegación' : 'Abrir navegación'}
+            aria-expanded={mobileNavOpen}
+          >
+            {mobileNavOpen ? <FiX className="w-5 h-5" /> : <FiMenu className="w-5 h-5" />}
+          </button>
           <div className="relative">
             <button
               type="button"
@@ -104,6 +114,22 @@ export const Header: React.FC = () => {
           </div>
         </div>
       </div>
+      {mobileNavOpen && (
+        <nav className="md:hidden border-t border-white/10 px-4 py-2">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === '/'}
+              onClick={() => setMobileNavOpen(false)}
+              className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm ${isActive ? 'bg-[#DDA15E] text-white' : 'text-[#FEFAE0]/80 hover:bg-white/10'}`}
+            >
+              <item.icon className="w-4 h-4" />
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+      )}
     </header>
   );
 };

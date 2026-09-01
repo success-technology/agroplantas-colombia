@@ -1,6 +1,6 @@
 // frontend/src/pages/SoportePage.tsx
 import React, { useEffect, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { FiHelpCircle, FiMail, FiLogOut, FiUser, FiSend } from 'react-icons/fi';
 import { getUser, logout, UserProfile } from '../lib/authStore';
 
@@ -23,9 +23,13 @@ const FAQS = [
 
 export const SoportePage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const ticketReference = (location.state as { ticketReference?: string } | null)?.ticketReference;
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
+  const [subject, setSubject] = useState(ticketReference ? `Ticket ${ticketReference}` : '');
+  const [message, setMessage] = useState(
+    ticketReference ? `Necesito ayuda. Mi referencia es ${ticketReference}.\n\nDescripción: ` : ''
+  );
 
   useEffect(() => {
     getUser().then(setUser);

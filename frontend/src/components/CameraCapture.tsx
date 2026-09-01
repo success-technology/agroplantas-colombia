@@ -1,6 +1,6 @@
 // frontend/src/components/CameraCapture.tsx
 import React, { useEffect, useRef, useState } from 'react';
-import { FiX, FiCamera, FiRotateCcw } from 'react-icons/fi';
+import { FiX, FiCamera, FiRotateCcw, FiRefreshCw } from 'react-icons/fi';
 
 interface CameraCaptureProps {
   onCapture: (file: File) => void;
@@ -14,6 +14,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
 
   const stopStream = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -59,8 +60,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     // integrados (con sensores extra, ej. IR para Windows Hello) provocan
     // AbortError: "Timeout starting video source".
     const strategies: MediaStreamConstraints[] = [
+      { video: { facingMode: { exact: facingMode } }, audio: false },
+      { video: { facingMode: { ideal: facingMode } }, audio: false },
       { video: true, audio: false },
-      { video: { facingMode: { ideal: 'environment' } }, audio: false },
     ];
 
     const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -108,7 +110,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       active = false;
       stopStream();
     };
-  }, [retryKey]);
+  }, [facingMode, retryKey]);
 
   const handleCapture = () => {
     const video = videoRef.current;
@@ -131,6 +133,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   };
 
   const handleRetake = () => setPhoto(null);
+
+  const handleSwitchCamera = () => {
+    setPhoto(null);
+    setError(null);
+    setFacingMode((current) => (current === 'environment' ? 'user' : 'environment'));
+  };
 
   const handleClose = () => {
     stopStream();
@@ -174,9 +182,19 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
               className="w-full h-full object-cover"
             />
           )}
+          {!error && !photo && (
+            <button
+              type="button"
+              onClick={handleSwitchCamera}
+              aria-label={`Cambiar a cámara ${facingMode === 'environment' ? 'frontal' : 'trasera'}`}
+              className="absolute top-3 right-3 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+            >
+              <FiRefreshCw className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
-        <div className="p-4 flex gap-3">
+        <div className="p-4 flex flex-col sm:flex-row gap-3">
           {photo ? (
             <>
               <button

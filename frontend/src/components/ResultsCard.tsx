@@ -144,7 +144,7 @@ export const ResultsCard: React.FC<ResultsCardProps> = ({ prediction, imageUrl }
               <FiTag className="w-5 h-5" />
               Diagnóstico
             </div>
-            <p className="text-xl font-bold text-gray-900">
+            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
               {a?.isHealthy ? 'Planta sana' : a?.conditionShort ?? info.condition}
             </p>
             {!a?.isHealthy && info.pestOrDiseaseName && (

@@ -4,7 +4,7 @@
 // Solo el token se guarda en localStorage; los datos del usuario
 // se piden al backend cuando se necesitan (getUser).
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 const TOKEN_KEY = 'agroidentify_token';
 
 export interface UserProfile {
@@ -51,11 +51,16 @@ export async function register(
   password: string,
   nombre?: string
 ): Promise<UserProfile> {
-  const res = await fetch(`${API_BASE}/api/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, nombre }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, nombre }),
+    });
+  } catch {
+    throw new AuthError('No se pudo conectar con el servidor. Inicia el backend en http://localhost:8000 e inténtalo de nuevo.');
+  }
   if (!res.ok) throw new AuthError(await parseErrorDetail(res));
   const data = await res.json();
   setToken(data.access_token);
@@ -63,11 +68,16 @@ export async function register(
 }
 
 export async function login(email: string, password: string): Promise<UserProfile> {
-  const res = await fetch(`${API_BASE}/api/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch {
+    throw new AuthError('No se pudo conectar con el servidor. Inicia el backend en http://localhost:8000 e inténtalo de nuevo.');
+  }
   if (!res.ok) throw new AuthError(await parseErrorDetail(res));
   const data = await res.json();
   setToken(data.access_token);

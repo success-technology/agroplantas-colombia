@@ -1,6 +1,6 @@
 // frontend/src/pages/ConsejosPage.tsx
-import React from 'react';
-import { FiDroplet, FiSun, FiShield, FiRepeat, FiFeather } from 'react-icons/fi';
+import React, { useState } from 'react';
+import { FiDroplet, FiSun, FiShield, FiRepeat, FiFeather, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
 interface Tip {
   title: string;
@@ -68,32 +68,76 @@ const TIPS: Tip[] = [
 ];
 
 export const ConsejosPage: React.FC = () => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const activeTip = TIPS[activeIndex];
+
+  const moveCarousel = (direction: number) => {
+    setActiveIndex((current) => (current + direction + TIPS.length) % TIPS.length);
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">Consejos y manejo</h1>
-      <p className="text-gray-500 mb-6">
-        Recomendaciones generales para el cuidado de tus cultivos, explicadas de forma clara.
-      </p>
+      <div className="flex items-end justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Consejos y manejo</h1>
+          <p className="text-gray-500">
+            Recomendaciones generales para el cuidado de tus cultivos, explicadas de forma clara.
+          </p>
+        </div>
+        <span className="shrink-0 text-xs font-semibold text-gray-500 tabular-nums">
+          {activeIndex + 1} / {TIPS.length}
+        </span>
+      </div>
 
-      <div className="space-y-4">
-        {TIPS.map((section) => (
-          <div key={section.title} className="bg-white rounded-xl shadow-sm p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <span className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${section.color}`}>
-                {section.icon}
-              </span>
-              <h2 className="font-semibold text-gray-900">{section.title}</h2>
-            </div>
-            <ul className="space-y-2.5">
-              {section.items.map((item, i) => (
-                <li key={i} className="text-sm text-gray-700 flex gap-2.5">
-                  <span className="text-[#DDA15E] font-bold mt-0.5">•</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="h-1 bg-[#DDA15E]" />
+        <div className="p-5 sm:p-7">
+          <div className="flex items-center gap-3 mb-6">
+            <span className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${activeTip.color}`}>
+              {activeTip.icon}
+            </span>
+            <h2 className="font-semibold text-gray-900 text-lg">{activeTip.title}</h2>
           </div>
-        ))}
+          <ul className="space-y-3.5 min-h-[220px]">
+            {activeTip.items.map((item, itemIndex) => (
+              <li key={itemIndex} className="text-sm text-gray-700 flex gap-2.5">
+                <span className="text-[#DDA15E] font-bold mt-0.5">•</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="flex items-center justify-between gap-4 mt-6 pt-5 border-t border-gray-100 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={() => moveCarousel(-1)}
+              aria-label="Consejo anterior"
+              className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <FiChevronLeft className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-2" aria-label="Seleccionar categoría de consejos">
+              {TIPS.map((tip, tipIndex) => (
+                <button
+                  key={tip.title}
+                  type="button"
+                  onClick={() => setActiveIndex(tipIndex)}
+                  aria-label={`Ver consejos de ${tip.title}`}
+                  aria-current={tipIndex === activeIndex ? 'step' : undefined}
+                  className={`h-2 rounded-full transition-all ${tipIndex === activeIndex ? 'w-7 bg-[#283618] dark:bg-[#DDA15E]' : 'w-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400'}`}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => moveCarousel(1)}
+              aria-label="Siguiente consejo"
+              className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <FiChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

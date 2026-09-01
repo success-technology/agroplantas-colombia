@@ -14,12 +14,14 @@ import { AjustesPage } from './pages/AjustesPage';
 import { AuthPage } from './pages/AuthPage';
 import { SoportePage } from './pages/SoportePage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
+import { ThemeProvider } from './lib/themeStore';
 
 function App() {
   return (
-    <BrowserRouter>
-      <DashboardLayout>
-        <Routes>
+    <ThemeProvider>
+      <BrowserRouter>
+        <DashboardLayout>
+          <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/identificar" element={<IdentificarPage />} />
           <Route path="/mis-identificaciones" element={<MisIdentificacionesPage />} />
@@ -41,9 +43,10 @@ function App() {
               />
             }
           />
-        </Routes>
-      </DashboardLayout>
-    </BrowserRouter>
+          </Routes>
+        </DashboardLayout>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 
