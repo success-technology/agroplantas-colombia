@@ -21,9 +21,18 @@ class UserOut(BaseModel):
     id: int
     email: str
     nombre: str | None = None
+    avatar_base64: str | None = None
 
     class Config:
         from_attributes = True
+
+
+class AvatarUpdateRequest(BaseModel):
+    avatar_base64: str
+
+
+class ProfileUpdateRequest(BaseModel):
+    nombre: str | None = None
 
 
 class TokenResponse(BaseModel):

@@ -6,7 +6,14 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from db_models import User
-from schemas_auth import RegisterRequest, LoginRequest, TokenResponse, UserOut
+from schemas_auth import (
+    RegisterRequest,
+    LoginRequest,
+    TokenResponse,
+    UserOut,
+    AvatarUpdateRequest,
+    ProfileUpdateRequest,
+)
 from auth_utils import hash_password, verify_password, create_access_token
 from auth_deps import get_current_user
 
@@ -50,4 +57,30 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
 @router.get("/me", response_model=UserOut)
 def me(current_user: User = Depends(get_current_user)):
+    return UserOut.model_validate(current_user)
+
+
+@router.put("/me", response_model=UserOut)
+def update_profile(
+    payload: ProfileUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if payload.nombre is not None:
+        current_user.nombre = payload.nombre
+
+    db.commit()
+    db.refresh(current_user)
+    return UserOut.model_validate(current_user)
+
+
+@router.put("/me/avatar", response_model=UserOut)
+def update_avatar(
+    payload: AvatarUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    current_user.avatar_base64 = payload.avatar_base64
+    db.commit()
+    db.refresh(current_user)
     return UserOut.model_validate(current_user)

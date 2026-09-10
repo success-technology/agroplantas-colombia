@@ -20,6 +20,7 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     nombre = Column(String, nullable=True)
+    avatar_base64 = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     identificaciones = relationship(
