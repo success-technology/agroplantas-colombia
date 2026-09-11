@@ -88,6 +88,30 @@ export function logout(): void {
   clearToken();
 }
 
+/**
+ * Si la URL trae ?token=... (por ejemplo, al llegar desde la landing ya con
+ * sesión iniciada ahí), lo guarda como la sesión de esta app y limpia el
+ * parámetro de la URL para que no quede visible ni se comparta al copiar el link.
+ * Se ejecuta una sola vez, al cargar este módulo.
+ */
+function captureTokenFromUrl(): void {
+  if (typeof window === 'undefined') return;
+
+  const params = new URLSearchParams(window.location.search);
+  const tokenFromUrl = params.get('token');
+  if (!tokenFromUrl) return;
+
+  setToken(tokenFromUrl);
+
+  params.delete('token');
+  const newSearch = params.toString();
+  const newUrl =
+    window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
+  window.history.replaceState({}, '', newUrl);
+}
+
+captureTokenFromUrl();
+
 /** Consulta el backend para saber quién está logueado. Devuelve null si no hay sesión (o expiró). */
 export async function getUser(): Promise<UserProfile | null> {
   const token = getToken();

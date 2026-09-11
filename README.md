@@ -27,13 +27,16 @@ El sistema se divide en **tres servicios independientes**:
 
 > **Importante:** Usa **Python 3.11** (no 3.14). En Windows: `py -3.11`
 
+# instala dependencia y entorno virtual
+py -3.11 -m venv .venv311
+.\.venv311\Scripts\Activate.ps1
+pip install -r .\requirements-backend.txt
+
+
 ### 1. Backend
 
 ```powershell
 cd backend
-py -3.11 -m venv .venv311
-.\.venv311\Scripts\Activate.ps1
-pip install -r ..\requirements-backend.txt
 uvicorn main:app --reload --port 8000
 ```
 
@@ -41,7 +44,7 @@ uvicorn main:app --reload --port 8000
 
 ```powershell
 cd ml_service
-pip install -r ..\requirements-ml.txt
+pip install -r .\requirements-ml.txt
 uvicorn main:app --reload --port 8001
 ```
 
