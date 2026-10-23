@@ -116,7 +116,7 @@ async def health_check():
     metrics_path = Path(__file__).resolve().parents[1] / "models" / "training_metrics.json"
     metrics = {}
     if metrics_path.exists():
-        with open(metrics_path, encoding="utf-8") as f:
+        with open(metrics_path, encoding="utf-8-sig") as f:
             metrics = json.load(f)
 
     class_names = load_class_names()
@@ -223,13 +223,56 @@ async def predict(file: UploadFile = File(...)):
             raise HTTPException(status_code=ml_response.status_code, detail=detail)
 
         ml_data = ml_response.json()
+
         class_names = ml_data["class_names"]
-        predictions = np.array(ml_data["probabilities"], dtype=np.float32)
+
+        predictions = np.array(
+            ml_data["probabilities"],
+            dtype=np.float32,
+        )
 
         if len(predictions) != len(class_names):
-            raise HTTPException(status_code=500, detail="Desajuste entre modelo y clases")
+            raise HTTPException(
+                status_code=500,
+                detail="Desajuste entre modelo y clases",
+            )
 
-        analysis_raw = analyze_predictions(class_names, predictions)
+        # Probabilidades del modelo específico de especies.
+        species_class_names = ml_data.get(
+            "species_class_names",
+            [],
+        )
+
+        species_probabilities = np.array(
+            ml_data.get(
+                "species_probabilities",
+                [],
+            ),
+            dtype=np.float32,
+        )
+
+        print("=== BACKEND ML DEBUG ===")
+        print("Species names:", species_class_names)
+        print("Species probabilities:", species_probabilities)
+        print("Species count:", len(species_probabilities))
+        print("========================")
+
+        analysis_raw = analyze_predictions(
+            class_names,
+            predictions,
+            species_class_names=species_class_names,
+            species_probabilities=species_probabilities,
+        )
+
+        print("=== ANALYSIS DEBUG ===")
+        print("Final class:", analysis_raw.get("finalClass"))
+        print("Species name:", analysis_raw.get("speciesName"))
+        print("Species confidence:", analysis_raw.get("speciesConfidence"))
+        print("Alternative species:", analysis_raw.get("alternativeSpecies"))
+        print("======================")
+
+        final_class = analysis_raw["finalClass"]
+        confidence = analysis_raw["confidence"]
         final_class = analysis_raw["finalClass"]
         confidence = analysis_raw["confidence"]
 
