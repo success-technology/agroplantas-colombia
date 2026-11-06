@@ -33,6 +33,6 @@
     "esbuild@0.18.20": true
   },
   "engines": {
-    "node": ">=20"
+    "node": "24.x"
   }
 }

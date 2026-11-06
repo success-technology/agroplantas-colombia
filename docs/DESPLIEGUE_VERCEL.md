@@ -13,7 +13,7 @@ En **Settings → General → Build and Development Settings**, usa:
 - **Build Command:** `npm run build`
 - **Output Directory:** `dist`
 - **Install Command:** `npm ci`
-- **Node.js Version:** `20.x` o superior
+- **Node.js Version:** `24.x` (el mismo valor queda fijado en ambos `package.json` para evitar que Vercel salte automáticamente a una versión mayor)
 
 La carpeta `frontend/` contiene su propio `package.json`, `package-lock.json` y `vercel.json`. Ese archivo agrega las cabeceras de seguridad y reescribe rutas como `/login` a la aplicación SPA para evitar un 404 al recargar.
 
