@@ -6,6 +6,7 @@ import { getHistory, HistoryItem } from '../lib/historyStore';
 import { ResultsCard } from '../components/ResultsCard';
 import { useLanguage } from '../lib/languageStore';
 
+/** Agrupa cada registro en una sección temporal relativa a la fecha actual. */
 function groupLabel(timestamp: number): string {
   /** Clasifica una fecha en una etiqueta de grupo para ordenar el historial. */
   const now = new Date();

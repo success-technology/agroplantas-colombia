@@ -5,6 +5,7 @@ import { FiArrowLeft, FiExternalLink, FiInfo, FiShield } from 'react-icons/fi';
 const privacyPolicyUrl = 'https://docs.google.com/document/d/1faG70ka6WdizoJzSQyy2DRVy-1G8zC-myIB8FCKK3ks/edit?usp=sharing';
 const cookiesPolicyUrl = 'https://docs.google.com/document/d/1NHLL_odxoG5_B9Q5iqfcRWFxHZE72iTi6G5dBfxKHDI/edit?usp=sharing';
 
+/** Enlace común para abrir una política alojada fuera de la aplicación. */
 const PolicyLink: React.FC<{ href: string; children: React.ReactNode }> = ({ href, children }) => (
   <a
     href={href}
