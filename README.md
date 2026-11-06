@@ -37,7 +37,7 @@ flowchart LR
   FE -. respaldo Drive .-> GD[Google Drive API]
 ```
 
-El detalle de módulos, rutas, fases del análisis y funciones principales está en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md). La metodología de entrenamiento está en [frontend/docs/METODOLOGIA.md](frontend/docs/METODOLOGIA.md), y las variables sensibles/configuración en [docs/SEGURIDAD.md](docs/SEGURIDAD.md).
+El detalle de módulos, rutas, fases del análisis y funciones principales está en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md). La metodología de entrenamiento está en [frontend/docs/METODOLOGIA.md](frontend/docs/METODOLOGIA.md), y las variables sensibles/configuración en [docs/SEGURIDAD.md](docs/SEGURIDAD.md). Para desplegar en Vercel consulta [docs/DESPLIEGUE_VERCEL.md](docs/DESPLIEGUE_VERCEL.md).
 
 ## Inicio local en Windows
 
