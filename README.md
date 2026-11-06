@@ -1,165 +1,125 @@
 # AgroPlantas Colombia
 
-Plataforma de identificación automática de plantas agrícolas y detección de plagas/enfermedades mediante **Redes Neuronales Convolucionales (CNN)**, orientada al monitoreo de cultivos en Colombia.
+Aplicación web para identificar especies agrícolas y orientar sobre estados fitosanitarios a partir de una fotografía. Incluye cuenta de usuario, historial privado, biblioteca de cultivos, recomendaciones, soporte y ajustes de accesibilidad.
 
-**En producción:** https://agroplantas-colombia.vercel.app
+> **Importante antes de publicarla:** la selección de planes está disponible como vista informativa; no hay pasarela de pagos ni activación de suscripciones. En este momento el backend aplica el mismo límite de seis análisis cada 24 horas a usuarios con sesión e invitados. La identificación es una orientación y no reemplaza el diagnóstico de un profesional agrícola.
 
-## Objetivos cubiertos
+## Funciones disponibles
 
-| Objetivo | Implementación |
-|----------|----------------|
-| Dataset estructurado | `scripts/prepare_dataset.py` — 93 clases, 21 especies, 16+ fuentes |
-| Modelo CNN de dos etapas | MobileNetV2 (especie → estado) en `scripts/train.py` |
-| Aplicación web | React + FastAPI, con autenticación real y persistencia en base de datos |
-| Despliegue en producción | Vercel (frontend) + Render (backend + ml_service) + Supabase (PostgreSQL) |
+- Captura desde cámara o carga de imágenes JPG, PNG y WEBP (máximo 10 MB).
+- Identificación con un modelo de dos etapas: especie y estado de la planta.
+- Resultados con confianza, alternativas, estado, plaga/enfermedad y recomendaciones agronómicas.
+- Biblioteca y fichas de las clases disponibles en el modelo.
+- Registro, inicio de sesión con correo/contraseña y Google, recuperación de contraseña y perfil.
+- Historial asociado a la cuenta, descarga JSON y copia de seguridad JSON en Google Drive.
+- Cuota de seis análisis por cada ventana de 24 horas por usuario o identificador de invitado.
+- Preferencias de tema, tamaño de texto, idioma español/inglés y notificaciones del navegador compatibles.
+- Centro de soporte, preguntas frecuentes, consentimiento de cookies y enlaces a las políticas proporcionadas.
+- Planes Pro/Premium preparados pero ocultos durante la presentación institucional mediante `COMMERCIAL_PLANS_ENABLED`; el cobro no está implementado.
 
 ## Arquitectura
 
-El sistema se divide en **tres servicios independientes**:
+La aplicación se ejecuta como tres partes separadas:
 
-- **`backend/`** — FastAPI. Autenticación de usuarios (JWT + bcrypt), historial de identificaciones, catálogo de plantas y biblioteca. Reenvía cada imagen al `ml_service` por HTTP; no carga TensorFlow.
-- **`ml_service/`** — FastAPI. Aloja exclusivamente el modelo entrenado (TensorFlow/Keras) y expone `/health` y `/predict`. Sin dependencia de base de datos.
-- **`frontend/`** — React + Vite + TypeScript.
+1. **`frontend/`**: React, TypeScript y Vite; navegación, cámara/carga, sesión del navegador y presentación de resultados.
+2. **`backend/`**: FastAPI; autenticación, PostgreSQL/SQLite, cuota, catálogo, recomendaciones e historial. Reenvía las imágenes al servicio ML.
+3. **`ml_service/`**: FastAPI + TensorFlow/Keras; carga los modelos y calcula probabilidades. No administra cuentas ni la base de datos.
 
-> Esta separación (backend / ml_service) no fue el diseño inicial: se adoptó tras detectar que TensorFlow y una conexión activa a PostgreSQL en el mismo proceso causaban un *segmentation fault* reproducible en producción.
+```mermaid
+flowchart LR
+  U[Usuario: móvil o escritorio] --> FE[Frontend React / Vite]
+  FE -->|REST: /api/*| API[Backend FastAPI]
+  API --> DB[(SQLite local / PostgreSQL producción)]
+  API -->|POST /predict| ML[Microservicio ML]
+  ML --> M[(MobileNetV2: especie + estado)]
+  API -->|resultado + recomendaciones| FE
+  FE -. OAuth .-> G[Google Identity Services]
+  FE -. respaldo Drive .-> GD[Google Drive API]
+```
 
-## Inicio rápido (desarrollo local)
+El detalle de módulos, rutas, fases del análisis y funciones principales está en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md). La metodología de entrenamiento está en [frontend/docs/METODOLOGIA.md](frontend/docs/METODOLOGIA.md), y las variables sensibles/configuración en [docs/SEGURIDAD.md](docs/SEGURIDAD.md).
 
-> **Importante:** Usa **Python 3.11** (no 3.14). En Windows: `py -3.11`
+## Inicio local en Windows
 
-# instala dependencia y entorno virtual
+Usa Python 3.11. Abre **tres terminales** en la carpeta raíz del repositorio. En la primera ejecución crea y activa el entorno e instala las dependencias necesarias:
+
+```powershell
 py -3.11 -m venv .venv311
 .\.venv311\Scripts\Activate.ps1
-pip install -r .\requirements-backend.txt
+python -m pip install -r requirements-backend.txt
+python -m pip install -r requirements-ml.txt
+```
 
+Configura `backend/.env` con:
 
-### 1. Backend
+```dotenv
+ML_SERVICE_URL=http://127.0.0.1:8001
+```
+
+Si vas a probar autenticación Google local, copia `frontend/.env.example` a `frontend/.env` y agrega el OAuth Client ID público autorizado para `http://localhost:3000`. Copia `backend/.env.example` a `backend/.env` y configura el mismo Client ID como `GOOGLE_CLIENT_ID`.
+
+**Terminal 1 — backend (puerto 8002):**
 
 ```powershell
 cd backend
-uvicorn main:app --reload --port 8000
+..\.venv311\Scripts\Activate.ps1
+uvicorn main:app --reload --host 0.0.0.0 --port 8002
 ```
 
-### 2. Servicio de inferencia (ml_service)
+**Terminal 2 — inferencia ML (puerto 8001):**
 
 ```powershell
 cd ml_service
-pip install -r .\requirements-ml.txt
-uvicorn main:app --reload --port 8001
+..\.venv311\Scripts\Activate.ps1
+uvicorn main:app --reload --host 0.0.0.0 --port 8001
 ```
 
-### 3. Frontend
+**Terminal 3 — frontend (puerto 3000):** desde la raíz del repositorio:
 
 ```powershell
-npm install
+npm.cmd --prefix frontend install
+npm.cmd run dev
 ```
 
-Crea el archivo `frontend/.env` (no se sube a git) con:
+El script de la raíz dirige el comando al frontend. Abre `http://localhost:3000`; la documentación del backend está en `http://localhost:8002/docs`. Vite reenvía `/api` y `/health` al backend en el puerto 8002. Si el puerto 3000 ya está ocupado, detén el Vite anterior antes de iniciar otro.
 
-```
-VITE_API_URL=http://localhost:8000
-```
+Para usar la app desde otro teléfono en la misma red, abre `http://<IP-DE-TU-PC>:3000`. La cámara/notificaciones y Google pueden requerir HTTPS; el inicio OAuth de Google admite `localhost` para desarrollo, pero no una IP privada en HTTP. Consulta [docs/SEGURIDAD.md](docs/SEGURIDAD.md).
 
-```powershell
-npm run dev
-```
+## Entrenar o evaluar el modelo
 
-Abrir **http://localhost:3000** y subir una imagen de planta.
-
-> Si `backend` no encuentra el `ml_service` local, revisa la variable de entorno `ML_SERVICE_URL` (por defecto apunta al servicio en Render).
-
-### Entrenamiento del modelo (opcional — el modelo ya entrenado vive en `models/`)
+El entrenamiento es opcional para ejecutar la aplicación: los artefactos están en `models/`. Los datos crudos y procesados no se incluyen en Git.
 
 ```powershell
 python scripts/prepare_dataset.py --input data/raw
-python scripts/train.py --data data/processed --epochs 15
-python scripts/evaluate.py
+python scripts/train.py --data data/processed --epochs 12
+python scripts/evaluate.py --data data/processed
 ```
 
-## Estructura del proyecto
+`models/training_metrics.json` registra métricas de entrenamiento/validación del artefacto disponible. **No uses el `accuracy: 1.0` de `models/evaluation_report.json` como resultado de evaluación del clasificador actual:** ese archivo reporta una sola clase llamada `PlantVillage`, por lo que no es una evaluación válida de las 93 clases. Regenera el informe con un conjunto TEST compatible y valida con fotografías de campo antes de presentar una precisión de producción.
 
-```
-agroplantas-colombia/
-│
-├── README.md
-├── requirements-backend.txt      # Dependencias del backend (SIN TensorFlow, a propósito)
-├── requirements-ml.txt           # Dependencias del ml_service (incluye TensorFlow)
-├── docker-compose.yml
-│
-├── backend/                      # API transaccional (sin TensorFlow)
-│   ├── main.py                   # Endpoints /api/predict, /health, /api/plant-info, etc.
-│   ├── database.py               # Conexión SQLAlchemy (PostgreSQL en producción)
-│   ├── db_models.py
-│   ├── auth_utils.py / auth_deps.py
-│   ├── routers/
-│   │   ├── auth.py               # Registro / login (JWT + bcrypt)
-│   │   └── history.py            # Historial de identificaciones por usuario
-│   ├── schemas.py / schemas_auth.py
-│   ├── recommendations.py        # Fichas agronómicas por clase
-│   ├── prediction_utils.py       # Agrupa por especie + detecta "no reconocida"
-│   ├── plant_knowledge.py        # Nombres en español, enfermedades, tratamientos
-│   ├── supported_species.py      # Especies reales que el modelo entrenado reconoce
-│   └── class_names_util.py
-│
-├── ml_service/                   # Servicio de inferencia aislado (TensorFlow/Keras)
-│   ├── main.py                   # Endpoints /health, /predict
-│   ├── image_utils.py            # Preprocesamiento y TTA de imágenes
-│   └── models/
-│       └── predictor.py          # Carga el modelo y predice
-│
-├── frontend/                     # Aplicación web (React + Vite + TypeScript)
-│   ├── .env                      # VITE_API_URL (no se sube a git)
-│   └── src/
-│       ├── pages/                # IdentificarPage, AjustesPage, BibliotecaPage, etc.
-│       ├── lib/                  # authStore, historyStore
-│       └── components/
-│           ├── UploadZone.tsx
-│           ├── ResultsCard.tsx
-│           ├── ModelStatus.tsx
-│           └── ...
-│
-├── scripts/                      # Pipeline de entrenamiento
-│   ├── prepare_dataset.py
-│   ├── train.py
-│   └── evaluate.py
-│
-├── models/                       # Artefactos entrenados
-│   ├── species_classifier.keras
-│   ├── state_best_weights.keras
-│   ├── plant_classifier.keras
-│   ├── class_names.json          # {"0": "Algodon___Bacteriosis", ...}
-│   └── training_metrics.json 
-│
-└── docs/
+## Estructura principal
+
+```text
+backend/          API, autenticación, cuota, catálogo e historial
+ml_service/       API de inferencia TensorFlow/Keras aislada
+frontend/         React, rutas, componentes, estado y estilos
+models/           Modelos Keras y metadatos de clases/métricas
+scripts/           Preparación de datos, entrenamiento, evaluación y backup DB
+docs/              Arquitectura, seguridad, dataset y evaluación piloto
+requirements-backend.txt
+requirements-ml.txt
 ```
 
-## API (backend)
+## Estado de integración para la entrega
 
-| Endpoint | Descripción |
-|----------|-------------|
-| `GET /health` | Estado del backend, del ml_service y del modelo |
-| `GET /api/classes` | Lista completa de las 93 clases |
-| `GET /api/supported-species` | Las 21 especies que el modelo reconoce |
-| `POST /api/predict` | Subir imagen → predicción |
-| `GET /api/plant-info/{class_name}` | Ficha agronómica completa de una clase |
-| `POST /auth/register` / `/auth/login` | Autenticación de usuarios |
-| `GET /history` | Historial de identificaciones del usuario autenticado |
-| `GET /docs` | Documentación Swagger |
-
-## Despliegue en producción
-
-- **Frontend:** Vercel (Root Directory: `frontend`)
-- **Backend:** Render.com — Web Service, variable `ML_SERVICE_URL` apuntando al ml_service
-- **Servicio de inferencia:** Render.com — Web Service independiente, sin base de datos
-- **Base de datos:** Supabase (PostgreSQL)
-
-## Notas
-
-- Los datasets crudos (`data/raw/`, `data/processed/`) **no se suben a git** por su tamaño; solo el modelo ya entrenado (`models/*.keras`) viaja en el repositorio.
-- Si `model_trained` en `/health` no está en `true`, el frontend muestra un aviso de modo demostración (normalmente porque el `ml_service` de Render está dormido tras inactividad — su plan gratuito hiberna a los 15 minutos).
-- Las recomendaciones agronómicas se generan dinámicamente en `backend/recommendations.py` a partir de `plant_knowledge.py`.
-- El `requirements.txt` en la raíz del proyecto es una versión anterior, previa a separar backend y ml_service; para desarrollo local, usa `requirements-backend.txt` y `requirements-ml.txt` por separado.
+- Google OAuth, Drive, SMTP de recuperación, base PostgreSQL y dominios permitidos necesitan credenciales/configuración reales en sus proveedores.
+- La recuperación de contraseña no envía correo hasta configurar SMTP.
+- La copia en Drive requiere activar Drive API y autorizar los alcances indicados en [docs/SEGURIDAD.md](docs/SEGURIDAD.md).
+- La pantalla de planes y pago es solo una revisión de precio; no pide tarjetas, no cobra y no actualiza el plan del usuario.
+- La pantalla comercial está apagada por defecto en `frontend/src/lib/features.ts`; no la actives hasta configurar pagos y beneficios de planes.
+- La política de privacidad y cookies se enlaza desde `/privacidad`; los dos documentos de Google Docs deben tener acceso público de lectura para usuarios y Google OAuth.
+- En producción despliega `frontend/` en Vercel y configura backend y ML como servicios accesibles por HTTPS, con PostgreSQL persistente. No uses SQLite ni secretos de desarrollo en producción.
 
 ## Licencia
 
-Prototipo académico — uso educativo e investigación agrícola.
+Prototipo académico para uso educativo e investigación agrícola. Revisa las licencias y atribuciones de cada dataset y dependencia antes de redistribuirlo.

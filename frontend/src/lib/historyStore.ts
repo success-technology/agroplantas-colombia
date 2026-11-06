@@ -1,8 +1,8 @@
 // frontend/src/lib/historyStore.ts
 import { PredictionResult } from '../types';
 import { authHeader, isLoggedIn } from './authStore';
+import { API_BASE } from './apiBase';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const THUMB_MAX_WIDTH = 480;
 
 export interface HistoryItem {
@@ -20,10 +20,7 @@ export interface HistoryItem {
   prediction: PredictionResult;
 }
 
-/**
- * Convierte el archivo original en una miniatura JPEG en base64.
- * Esto evita mandar al backend imágenes de cámara a full resolución.
- */
+/** Redimensiona una foto a miniatura JPEG para reducir el tamaño del historial. */
 function resizeImage(file: File, maxWidth = THUMB_MAX_WIDTH): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -50,6 +47,7 @@ function resizeImage(file: File, maxWidth = THUMB_MAX_WIDTH): Promise<string> {
   });
 }
 
+/** Presenta un timestamp con el formato regional de Colombia. */
 function formatDate(ts: number): string {
   return new Date(ts).toLocaleDateString('es-CO', {
     day: 'numeric',
@@ -60,14 +58,17 @@ function formatDate(ts: number): string {
 
 // --- conversión entre el registro del backend y el HistoryItem del frontend ---
 
+/** Convierte booleanos al formato textual persistido por la API existente. */
 function boolToFlag(b: boolean): string {
   return b ? 'si' : 'no';
 }
 
+/** Recupera booleanos a partir de las banderas de texto del backend. */
 function flagToBool(f: string): boolean {
   return f === 'si';
 }
 
+/** Normaliza un registro SQL/API a la estructura consumida por React. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function backendToItem(row: any): HistoryItem {
   let prediction: PredictionResult | null = null;
@@ -107,6 +108,7 @@ export async function getHistory(): Promise<HistoryItem[]> {
   return rows.map(backendToItem);
 }
 
+/** Devuelve la identificación más reciente o null si el historial está vacío. */
 export async function getLastIdentification(): Promise<HistoryItem | null> {
   const items = await getHistory();
   return items[0] ?? null;
@@ -178,6 +180,7 @@ export async function saveIdentification(
   return backendToItem(row);
 }
 
+/** Pide al backend borrar una identificación propia por su ID. */
 export async function deleteHistoryItem(id: string): Promise<void> {
   if (!isLoggedIn()) return;
   await fetch(`${API_BASE}/api/history/${id}`, {
@@ -186,6 +189,7 @@ export async function deleteHistoryItem(id: string): Promise<void> {
   });
 }
 
+/** Solicita borrar todo el historial asociado a la cuenta autenticada. */
 export async function clearHistory(): Promise<void> {
   if (!isLoggedIn()) return;
   await fetch(`${API_BASE}/api/history`, {

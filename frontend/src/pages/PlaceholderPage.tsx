@@ -8,6 +8,7 @@ interface PlaceholderPageProps {
   icon: IconType;
 }
 
+/** Pantalla reutilizable para rutas cuyo módulo todavía no está implementado. */
 export const PlaceholderPage: React.FC<PlaceholderPageProps> = ({
   title,
   description,

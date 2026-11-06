@@ -1,0 +1,15 @@
+{
+  "id": "/",
+  "name": "AgroPlantas Colombia",
+  "short_name": "AgroPlantas",
+  "description": "Identifica plantas agrícolas y consulta recomendaciones agronómicas.",
+  "lang": "es-CO",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FEFAE0",
+  "theme_color": "#21321f",
+  "icons": [
+    { "src": "/logo.png", "sizes": "2000x2000", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

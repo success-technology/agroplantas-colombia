@@ -4,6 +4,10 @@
 
 Evaluar **precisión**, **rendimiento** y **usabilidad** con un grupo focal del sector agrícola colombiano.
 
+## Estado de evaluación actual
+
+El reporte `models/evaluation_report.json` del repositorio contiene una sola clase (`PlantVillage`) con 8.147 muestras. No corresponde al clasificador actual de 93 estados y su accuracy 1.0 **no es una métrica válida del sistema**. Las cifras de `models/training_metrics.json` son de entrenamiento/validación, no de un test independiente ni de fotos de campo.
+
 ## Métricas técnicas (automáticas)
 
 ```powershell
@@ -15,7 +19,7 @@ Genera `models/evaluation_report.json` con:
 - Precisión/recall por clase
 - Matriz de confusión
 
-**Meta sugerida:** accuracy ≥ 85% en test (depende del dataset).
+El conjunto TEST debe tener las mismas clases que `models/class_names.json`, no compartir imágenes/orígenes duplicados con train/validation y conservar etiquetas verificadas. Reporta macro-F1 y métricas por clase además de accuracy, porque las clases pueden estar desbalanceadas. Una meta de accuracy ≥ 85% puede servir como umbral inicial del proyecto, pero no es garantía de calidad ni reemplaza validación en campo.
 
 ## Métricas de usabilidad (grupo focal)
 
@@ -26,7 +30,7 @@ Genera `models/evaluation_report.json` con:
 ### Tareas (15 min por persona)
 1. Subir 3 fotos de plantas conocidas
 2. Interpretar el resultado y recomendaciones
-3. Responder encuesta corta (1–5):
+3. Comparar las predicciones con la identificación de un técnico/agronómo y responder encuesta corta (1–5):
 
 | Pregunta | Escala |
 |----------|--------|
@@ -46,7 +50,7 @@ Genera `models/evaluation_report.json` con:
 |---|---------|--------------|---------------|-----------|------------|-------|
 | 1 |         |              |               |           |            |       |
 
-## Criterios de éxito del piloto
+## Criterios de éxito del piloto (propuesta; aún por medir)
 
 - [ ] ≥ 80% de identificaciones correctas en campo
 - [ ] Promedio usabilidad ≥ 4/5

@@ -1,3 +1,5 @@
+"""Predictor heredado para compatibilidad; producción usa `ml_service.models`."""
+
 import json
 import os
 from pathlib import Path
@@ -24,7 +26,10 @@ SPECIES_MARGIN = 0.25
 
 
 class ModelPredictor:
+    """Versión anterior del predictor conservada para herramientas locales."""
+
     def __init__(self, model_path: str | None = None):
+        """Inicializa modelos de estado y especie cuando se usa esta copia."""
         self.model: tf.keras.Model | None = None
         self.class_names: list[str] = []
 
@@ -39,6 +44,7 @@ class ModelPredictor:
         self.load_species_model()
 
     def load_model(self, model_path: str | None = None):
+        """Carga el artefacto de condición o arma la arquitectura para pesos."""
         keras_path = MODELS_DIR / "plant_classifier.keras"
         weights_path = MODELS_DIR / "best_weights.keras"
         class_names_path = MODELS_DIR / "class_names.json"
@@ -119,13 +125,16 @@ class ModelPredictor:
               f"({len(self.species_class_names)} especies)")
 
     def has_species_stage(self) -> bool:
+        """Indica si el clasificador de especie está disponible."""
         return self.species_model is not None and len(self.species_class_names) >= 2
 
     @staticmethod
     def _species_of(class_name: str) -> str:
+        """Extrae la especie de una etiqueta de condición."""
         return class_name.split("___")[0] if "___" in class_name else class_name
 
     def _apply_species_gate(self, state_probs: np.ndarray, species_probs: np.ndarray) -> np.ndarray:
+        """Descarta clases de condición incompatibles con la especie estimada."""
         """Descarta (pone en 0) las probabilidades de clases de estado cuya
         especie no esté entre las especies más probables (según SPECIES_MARGIN),
         y renormaliza. Devuelve un vector del mismo tamaño que state_probs."""
@@ -151,6 +160,7 @@ class ModelPredictor:
         return gated / total
 
     def predict(self, image_array: np.ndarray) -> np.ndarray:
+        """Ejecuta las redes sobre un lote de imágenes ya preprocesadas."""
         if self.model is None:
             raise ValueError("El modelo no está cargado")
         state_probs = self.model.predict(image_array, verbose=0)
@@ -166,6 +176,7 @@ class ModelPredictor:
         return state_probs
 
     def predict_image(self, pil_image: Image.Image) -> np.ndarray:
+        """Convierte una foto PIL a lote y retorna la distribución promedio."""
         """Predicción con TTA (promedio de varias vistas de la imagen)."""
         variants = tta_variants(pil_image)
         batch = np.stack(variants, axis=0)
@@ -173,7 +184,9 @@ class ModelPredictor:
         return np.mean(preds, axis=0)
 
     def get_class_names(self) -> list[str]:
+        """Expone las clases en el orden asociado a la salida del modelo."""
         return self.class_names
 
     def is_ready(self) -> bool:
+        """Indica si el modelo de condición puede producir predicciones."""
         return self.model_loaded and len(self.class_names) >= 2

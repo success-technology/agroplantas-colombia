@@ -15,12 +15,14 @@ from supported_species import (
 
 
 def _split_class(class_name: str) -> tuple[str, str]:
+    """Separa una etiqueta `Especie___Condición` en sus dos componentes."""
     if "___" in class_name:
         return class_name.split("___", 1)
     return class_name, "healthy"
 
 
 def _species_label(plant_key: str) -> str:
+    """Convierte la clave interna de una especie en un nombre visible."""
     if plant_key in PLANT_NAMES_ES:
         return PLANT_NAMES_ES[plant_key][0]
 
@@ -32,6 +34,7 @@ def _is_recognized(
     species_conf: float,
     alt_species: list[dict],
 ) -> bool:
+    """Decide si las confianzas y el margen permiten aceptar la predicción."""
     if final_conf < MIN_CLASS_CONFIDENCE:
         return False
 
@@ -56,6 +59,11 @@ def analyze_predictions(
     species_class_names: list[str] | None = None,
     species_probabilities: np.ndarray | None = None,
 ) -> dict:
+    """Combina salidas de especie/estado y construye el análisis interpretado.
+
+    Agrupa estados por especie, selecciona alternativas, aplica umbrales de
+    rechazo y devuelve etiquetas aptas para las recomendaciones y la UI.
+    """
 
     # ============================================================
     # 1. PROBABILIDADES DEL MODELO DE ESTADO

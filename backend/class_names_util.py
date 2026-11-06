@@ -11,6 +11,7 @@ CLASS_NAMES_PATH = Path(__file__).resolve().parent.parent / "models" / "class_na
 
 
 def load_class_names() -> list[str]:
+    """Lee etiquetas JSON sin inicializar TensorFlow en el backend principal."""
     if not CLASS_NAMES_PATH.exists():
         return []
     try:

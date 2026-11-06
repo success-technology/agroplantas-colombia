@@ -40,6 +40,7 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".JPG", ".JPEG", "
 
 
 def _collect_images(folder: Path) -> list[Path]:
+    """Recopila imágenes admitidas en una carpeta sin mezclar subclases."""
     return [
         f for f in folder.rglob("*")
         if f.is_file() and f.suffix in IMAGE_EXTENSIONS
@@ -246,12 +247,14 @@ def scan_raw_source(source: dict) -> dict[str, list[Path]]:
 
 
 def load_manifest(manifest_path: Path) -> list[dict]:
+    """Lee del JSON las fuentes que se combinarán en un único dataset."""
     with open(manifest_path, encoding="utf-8") as f:
         data = json.load(f)
     return data["sources"]
 
 
 def merge_sources(sources: list[dict]) -> dict[str, list[Path]]:
+    """Normaliza fuentes diferentes a un mapa clase -> lista de imágenes."""
     combined: dict[str, list[Path]] = {}
     for source in sources:
         crop = source.get("crop", "?")
@@ -284,6 +287,7 @@ def split_and_copy(
     seed: int,
     max_per_class: int | None,
 ) -> dict[str, int]:
+    """Baraja cada clase y copia archivos a carpetas train, val y test."""
     random.seed(seed)
     stats = {"train": 0, "val": 0, "test": 0, "classes": len(classes)}
 
@@ -327,6 +331,7 @@ def split_and_copy(
 
 
 def main():
+    """Procesa argumentos, reúne fuentes y crea o previsualiza el dataset."""
     parser = argparse.ArgumentParser(description="Preparar dataset de plantas desde Kaggle")
     parser.add_argument("--input", default="data/raw", help="Carpeta con dataset descomprimido (modo fuente única)")
     parser.add_argument("--manifest", default=None, help="JSON con múltiples fuentes a combinar (modo multi-fuente)")
@@ -397,4 +402,4 @@ def main():
     
 
 if __name__ == "__main__":
-    main() 
+    main()

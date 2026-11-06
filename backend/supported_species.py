@@ -43,6 +43,7 @@ def _load_trained_plant_keys() -> set[str]:
 
 
 def _build_supported_species() -> list[str]:
+    """Forma la lista española de especies con clases en el modelo instalado."""
     trained_keys = _load_trained_plant_keys()
     if not trained_keys:
         # Sin class_names.json (modo demo sin modelo entrenado): usar la base
@@ -61,4 +62,5 @@ SUPPORTED_SPECIES_ES: list[str] = _build_supported_species()
 
 
 def get_supported_species() -> list[str]:
+    """Devuelve una copia de las especies reconocidas por el servicio."""
     return SUPPORTED_SPECIES_ES.copy()

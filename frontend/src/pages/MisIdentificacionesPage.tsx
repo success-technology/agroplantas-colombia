@@ -3,8 +3,11 @@ import React, { useEffect, useState } from 'react';
 import { FiMoreVertical, FiTrash2, FiArrowLeft } from 'react-icons/fi';
 import { getHistory, clearHistory, HistoryItem } from '../lib/historyStore';
 import { ResultsCard } from '../components/ResultsCard';
+import { useLanguage } from '../lib/languageStore';
 
+/** Muestra el historial de identificaciones guardadas por la cuenta actual. */
 export const MisIdentificacionesPage: React.FC = () => {
+  const { t } = useLanguage();
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [selected, setSelected] = useState<HistoryItem | null>(null);
 
@@ -12,6 +15,7 @@ export const MisIdentificacionesPage: React.FC = () => {
     getHistory().then(setItems);
   }, []);
 
+  // Borra los registros y limpia el estado local después de la respuesta API.
   const handleClear = async () => {
     await clearHistory();
     setItems([]);
@@ -44,9 +48,9 @@ export const MisIdentificacionesPage: React.FC = () => {
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mis identificaciones</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('Mis identificaciones')}</h1>
           <p className="text-gray-500 mt-1">
-            Aquí verás el historial completo de tus identificaciones.
+            {t('Aquí verás el historial completo de tus identificaciones.')}
           </p>
         </div>
         {items.length > 0 && (
@@ -55,16 +59,15 @@ export const MisIdentificacionesPage: React.FC = () => {
             className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700"
           >
             <FiTrash2 className="w-4 h-4" />
-            Borrar historial
+            {t('Borrar historial')}
           </button>
         )}
       </div>
 
       {items.length === 0 ? (
         <div className="bg-white rounded-xl p-10 text-center text-gray-500">
-          Aún no tienes identificaciones. Ve a{' '}
-          <span className="font-medium text-[#283618]">Identificar planta</span> para tomar tu
-          primera foto.
+          {t('Aún no tienes identificaciones. Ve a')} {' '}
+          <span className="font-medium text-[#283618]">{t('Identificar planta')}</span> {t('para tomar tu primera foto.')}
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -1,3 +1,5 @@
+"""Carga y ejecuta los modelos MobileNetV2 de especie y estado fitosanitario."""
+
 import json
 import os
 from pathlib import Path
@@ -17,7 +19,10 @@ SPECIES_MARGIN = 0.25
 
 
 class ModelPredictor:
+    """Mantiene los modelos en memoria y convierte imágenes en probabilidades."""
+
     def __init__(self, model_path: str | None = None):
+        """Inicializa estado y carga primero el clasificador de condición."""
         self.model: tf.keras.Model | None = None
         self.class_names: list[str] = []
 
@@ -33,6 +38,7 @@ class ModelPredictor:
         self.load_species_model()
 
     def load_model(self, model_path: str | None = None):
+        """Carga el modelo de 93 clases o prepara su arquitectura con pesos disponibles."""
         keras_path = MODELS_DIR / "plant_classifier.keras"
         weights_path = MODELS_DIR / "best_weights.keras"
         class_names_path = MODELS_DIR / "class_names.json"
@@ -85,6 +91,7 @@ class ModelPredictor:
 
     @staticmethod
     def _load_ordered_names(raw):
+        """Normaliza etiquetas JSON a una lista en el orden de salida Softmax."""
         if isinstance(raw, (list, tuple)):
             return list(raw)
 
@@ -102,6 +109,7 @@ class ModelPredictor:
         )
 
     def load_species_model(self):
+        """Carga opcionalmente el clasificador auxiliar de especies."""
         species_keras_path = MODELS_DIR / "species_classifier.keras"
         species_names_path = MODELS_DIR / "species_class_names.json"
 
@@ -130,6 +138,7 @@ class ModelPredictor:
         )
 
     def has_species_stage(self) -> bool:
+        """Indica si se puede usar el filtro de especies en esta instancia."""
         return (
             self.species_model is not None
             and len(self.species_class_names) >= 2
@@ -137,6 +146,7 @@ class ModelPredictor:
 
     @staticmethod
     def _species_of(class_name: str) -> str:
+        """Obtiene la clave de especie antes del separador de condición."""
         return (
             class_name.split("___")[0]
             if "___" in class_name
@@ -148,6 +158,7 @@ class ModelPredictor:
         state_probs: np.ndarray,
         species_probs: np.ndarray,
     ) -> np.ndarray:
+        """Filtra y renormaliza clases de estado según la salida de especies."""
         top_species_prob = float(np.max(species_probs))
 
         keep_species = {
@@ -177,6 +188,7 @@ class ModelPredictor:
         self,
         image_array: np.ndarray,
     ) -> np.ndarray:
+        """Ejecuta redes sobre un lote y aplica el filtro si existe segunda etapa."""
         if self.model is None:
             raise ValueError("El modelo no está cargado")
 
@@ -217,6 +229,7 @@ class ModelPredictor:
         self,
         pil_image: Image.Image,
     ) -> np.ndarray:
+        """Preprocesa una foto, ejecuta inferencia y promedia las vistas generadas."""
         variants = tta_variants(pil_image)
 
         if not variants:
@@ -231,6 +244,7 @@ class ModelPredictor:
         return np.mean(predictions, axis=0)
 
     def get_species_probabilities(self) -> np.ndarray | None:
+        """Devuelve probabilidades de especie acotadas entre cero y uno."""
         if self.last_species_probabilities is None:
             return None
 
@@ -241,12 +255,15 @@ class ModelPredictor:
         )
 
     def get_species_class_names(self) -> list[str]:
+        """Devuelve etiquetas ordenadas de la etapa de especie."""
         return self.species_class_names
 
     def get_class_names(self) -> list[str]:
+        """Devuelve etiquetas ordenadas de la etapa de condición."""
         return self.class_names
 
     def is_ready(self) -> bool:
+        """Confirma que hay un modelo cargado y más de una clase utilizable."""
         return (
             self.model_loaded
             and len(self.class_names) >= 2

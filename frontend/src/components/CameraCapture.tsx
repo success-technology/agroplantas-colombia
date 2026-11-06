@@ -7,6 +7,11 @@ interface CameraCaptureProps {
   onClose: () => void;
 }
 
+// Convierte el modo técnico de MediaDevices en una etiqueta para la interfaz.
+const getCameraLabel = (mode: 'environment' | 'user') =>
+  mode === 'environment' ? 'trasera' : 'delantera';
+
+/** Controla permisos, flujo de cámara, vista previa, captura y liberación del stream. */
 export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -15,7 +20,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   const [photo, setPhoto] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [availableModes, setAvailableModes] = useState<Array<'environment' | 'user'>>(['user']);
 
+  // Detiene todas las pistas para soltar cámara y permisos al cerrar.
   const stopStream = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
@@ -23,6 +30,56 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       videoRef.current.srcObject = null;
     }
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    // Examina dispositivos para mostrar cambio de cámara solo si es posible.
+    const detectAvailableModes = async () => {
+      if (!navigator.mediaDevices?.enumerateDevices) {
+        if (isMounted) setAvailableModes(['user']);
+        return;
+      }
+
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoInputs = devices.filter((device) => device.kind === 'videoinput');
+
+        if (!isMounted) return;
+
+        const modes: Array<'environment' | 'user'> = [];
+
+        if (videoInputs.length > 0) {
+          modes.push('user');
+        }
+
+        const rearDetected = videoInputs.some((device) => {
+          const label = device.label.toLowerCase();
+          return (
+            label.includes('back') ||
+            label.includes('rear') ||
+            label.includes('environment') ||
+            label.includes('trasera') ||
+            label.includes('cámara trasera')
+          );
+        });
+
+        if (rearDetected && videoInputs.length > 1) {
+          modes.push('environment');
+        }
+
+        setAvailableModes(modes.length > 0 ? modes : ['user']);
+      } catch {
+        if (isMounted) setAvailableModes(['user']);
+      }
+    };
+
+    detectAvailableModes();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -34,6 +91,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       return;
     }
 
+    // Traduce errores de MediaDevices a instrucciones comprensibles.
     const describeError = (err: unknown) => {
       const name = err instanceof DOMException ? err.name : '';
       switch (name) {
@@ -49,16 +107,22 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         case 'AbortError':
           return 'La cámara tardó demasiado en iniciar. Esto es común en algunos webcams integrados. Intenta de nuevo.';
         case 'OverconstrainedError':
+          if (facingMode === 'environment') {
+            return 'Tu dispositivo no tiene cámara trasera compatible. La cámara delantera sigue disponible si tu equipo la tiene.';
+          }
           return 'No se encontró una cámara que cumpla los requisitos solicitados.';
         default:
           return 'No se pudo acceder a la cámara. Revisa los permisos del navegador.';
       }
     };
 
-    // Estrategias de conexión, de la más simple/rápida a la más específica.
-    // Empezar con `video: true` evita renegociaciones que en algunos webcams
-    // integrados (con sensores extra, ej. IR para Windows Hello) provocan
-    // AbortError: "Timeout starting video source".
+    const hasRearCamera = availableModes.includes('environment');
+    if (facingMode === 'environment' && !hasRearCamera) {
+      setError('Tu PC no tiene cámara trasera compatible. No es compatible con esta opción.');
+      setErrorDetail('La cámara trasera no está disponible en este equipo. Puedes usar la cámara delantera si tu dispositivo la tiene.');
+      return;
+    }
+
     const strategies: MediaStreamConstraints[] = [
       { video: { facingMode: { exact: facingMode } }, audio: false },
       { video: { facingMode: { ideal: facingMode } }, audio: false },
@@ -67,6 +131,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
     const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
+    // Intenta abrir cámara trasera y recurre a estrategias compatibles.
     const start = async () => {
       let lastErr: unknown = null;
 
@@ -82,17 +147,14 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
           }
-          return; // éxito, salimos
+          return;
         } catch (err) {
           lastErr = err;
           const name = err instanceof DOMException ? err.name : '';
-          // Errores transitorios (timeout / dispositivo ocupado momentáneamente):
-          // pausa breve y prueba la siguiente estrategia.
           if (name === 'AbortError' || name === 'NotReadableError') {
             await wait(500);
             continue;
           }
-          // Errores permanentes (permiso denegado, sin cámara): no tiene caso reintentar.
           break;
         }
       }
@@ -110,8 +172,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       active = false;
       stopStream();
     };
-  }, [facingMode, retryKey]);
+  }, [availableModes, facingMode, retryKey]);
 
+  // Copia el frame actual del video a una imagen JPEG.
   const handleCapture = () => {
     const video = videoRef.current;
     if (!video || !video.videoWidth) return;
@@ -123,6 +186,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     setPhoto(canvas.toDataURL('image/jpeg', 0.92));
   };
 
+  // Convierte la previsualización a File y devuelve la captura al padre.
   const handleConfirm = async () => {
     if (!photo) return;
     stopStream();
@@ -132,35 +196,61 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     onCapture(file);
   };
 
+  // Quita la previsualización para volver a capturar.
   const handleRetake = () => setPhoto(null);
 
+  // Alterna entre cámaras detectadas e inicia un nuevo stream.
   const handleSwitchCamera = () => {
+    if (error) {
+      setError(null);
+      setErrorDetail(null);
+    }
+
+    if (facingMode === 'environment' && !availableModes.includes('environment')) {
+      setError('Tu PC no tiene cámara trasera compatible. No es compatible con esta opción.');
+      setErrorDetail('La cámara trasera no está disponible en este equipo.');
+      return;
+    }
+
     setPhoto(null);
     setError(null);
+    setErrorDetail(null);
     setFacingMode((current) => (current === 'environment' ? 'user' : 'environment'));
   };
 
+  // Libera recursos de cámara antes de cerrar el diálogo.
   const handleClose = () => {
     stopStream();
     onClose();
   };
 
+  const canSwitchCamera = availableModes.length > 1;
+
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl overflow-hidden w-full max-w-md">
+    <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-white rounded-2xl overflow-hidden w-full max-w-[28rem] shadow-2xl">
         <div className="flex items-center justify-between px-4 py-3 bg-[#283618] text-white">
-          <h3 className="font-semibold text-sm">Tomar foto</h3>
+          <div>
+            <h3 className="font-semibold text-sm">Tomar foto</h3>
+            {!error && !photo && (
+              <p className="text-[11px] text-[#FEFAE0]/80 mt-0.5">
+                Cámara {getCameraLabel(facingMode)}
+              </p>
+            )}
+          </div>
           <button onClick={handleClose} aria-label="Cerrar">
             <FiX className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="relative bg-black aspect-[4/3] flex items-center justify-center">
+        <div className="relative bg-black aspect-[4/3] w-full flex items-center justify-center overflow-hidden">
           {error ? (
-            <div className="text-center px-6">
-              <p className="text-white text-sm">{error}</p>
+            <div className="text-center px-6 py-8 max-w-sm">
+              <p className="text-white text-sm leading-relaxed">{error}</p>
               {errorDetail && (
-                <span className="block mt-2 text-white/50 text-xs font-mono">{errorDetail}</span>
+                <span className="block mt-3 text-white/55 text-[11px] font-mono leading-relaxed">
+                  {errorDetail}
+                </span>
               )}
               <button
                 type="button"
@@ -182,7 +272,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
               className="w-full h-full object-cover"
             />
           )}
-          {!error && !photo && (
+
+          {!error && !photo && canSwitchCamera && (
             <button
               type="button"
               onClick={handleSwitchCamera}

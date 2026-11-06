@@ -13,12 +13,15 @@ import {
   FiTag,
 } from 'react-icons/fi';
 import { PredictionResult, PlantInfo } from '../types';
+import { useLanguage } from '../lib/languageStore';
 
 interface ResultsCardProps {
   prediction: PredictionResult;
   imageUrl: string;
 }
 
+/** Presenta una sección visual reutilizable dentro de la ficha del resultado. */
+/** Agrupa un bloque de información del resultado bajo un título e icono. */
 const Section: React.FC<{ title: string; icon?: React.ReactNode; children: React.ReactNode }> = ({
   title,
   icon,
@@ -37,7 +40,9 @@ const Section: React.FC<{ title: string; icon?: React.ReactNode; children: React
   </motion.div>
 );
 
+/** Expone clase, confianza, incertidumbre y recomendaciones del análisis. */
 export const ResultsCard: React.FC<ResultsCardProps> = ({ prediction, imageUrl }) => {
+  const { t } = useLanguage();
   const info: PlantInfo = prediction.plantInfo ?? prediction.recommendations;
   const a = prediction.analysis;
   const notRecognized = a?.recognized === false;
@@ -61,9 +66,9 @@ export const ResultsCard: React.FC<ResultsCardProps> = ({ prediction, imageUrl }
       <div className={`${statusColor} text-white px-6 py-8 md:px-10`}>
         {notRecognized ? (
           <>
-            <p className="text-sm uppercase tracking-widest opacity-90 mb-1">Resultado del análisis</p>
+            <p className="text-sm uppercase tracking-widest opacity-90 mb-1">{t('Resultado del análisis')}</p>
             <h2 className="text-3xl md:text-4xl font-extrabold mb-3">
-              Especie no identificada
+              {t('Especie no identificada')}
             </h2>
             <p className="text-white/90 text-base max-w-xl">
               Esta planta (por ejemplo orégano, café, yuca, plátano) <strong>no está en el catálogo</strong> con
@@ -79,7 +84,7 @@ export const ResultsCard: React.FC<ResultsCardProps> = ({ prediction, imageUrl }
           </>
         ) : (
           <>
-            <p className="text-sm uppercase tracking-widest opacity-90 mb-1">Especie identificada</p>
+            <p className="text-sm uppercase tracking-widest opacity-90 mb-1">{t('Especie identificada')}</p>
             <h2 className="text-4xl md:text-5xl font-extrabold mb-2">{a?.speciesName ?? info.plantType}</h2>
             {info.scientificName && (
               <p className="text-white/80 italic text-sm mb-4">{info.scientificName}</p>
@@ -91,16 +96,16 @@ export const ResultsCard: React.FC<ResultsCardProps> = ({ prediction, imageUrl }
               className="grid sm:grid-cols-3 gap-3 mt-4"
             >
               <div className="bg-white/20 backdrop-blur rounded-xl p-4 text-center">
-                <p className="text-xs uppercase opacity-80">Estado</p>
+                <p className="text-xs uppercase opacity-80">{t('Estado')}</p>
                 <p className="text-lg font-bold mt-1">{a?.statusLabel ?? info.healthStatus}</p>
               </div>
               <div className="bg-white/20 backdrop-blur rounded-xl p-4 text-center">
-                <p className="text-xs uppercase opacity-80">Plaga</p>
-                <p className="text-lg font-bold mt-1">{a?.hasPest ? 'Sí detectada' : 'No detectada'}</p>
+                <p className="text-xs uppercase opacity-80">{t('Plaga')}</p>
+                <p className="text-lg font-bold mt-1">{t(a?.hasPest ? 'Sí detectada' : 'No detectada')}</p>
               </div>
               <div className="bg-white/20 backdrop-blur rounded-xl p-4 text-center">
-                <p className="text-xs uppercase opacity-80">Enfermedad</p>
-                <p className="text-lg font-bold mt-1">{a?.hasDisease ? 'Sí detectada' : 'No detectada'}</p>
+                <p className="text-xs uppercase opacity-80">{t('Enfermedad')}</p>
+                <p className="text-lg font-bold mt-1">{t(a?.hasDisease ? 'Sí detectada' : 'No detectada')}</p>
               </div>
             </motion.div>
           </>
@@ -120,7 +125,7 @@ export const ResultsCard: React.FC<ResultsCardProps> = ({ prediction, imageUrl }
             <div className="mb-4 p-4 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 text-sm">
               <div className="flex gap-2 font-semibold mb-1">
                 <FiInfo className="w-5 h-5 shrink-0" />
-                {notRecognized ? 'Planta fuera del catálogo' : 'Resultado con baja confianza'}
+                {t(notRecognized ? 'Planta fuera del catálogo' : 'Resultado con baja confianza')}
               </div>
               <p>
                 {notRecognized ? (
@@ -142,10 +147,10 @@ export const ResultsCard: React.FC<ResultsCardProps> = ({ prediction, imageUrl }
           <div className="mb-6 p-4 border-2 border-emerald-200 bg-emerald-50 rounded-xl">
             <div className="flex items-center gap-2 text-emerald-800 font-semibold mb-1">
               <FiTag className="w-5 h-5" />
-              Diagnóstico
+              {t('Diagnóstico')}
             </div>
             <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
-              {a?.isHealthy ? 'Planta sana' : a?.conditionShort ?? info.condition}
+              {a?.isHealthy ? t('Planta sana') : t(a?.conditionShort ?? info.condition)}
             </p>
             {!a?.isHealthy && info.pestOrDiseaseName && (
               <p className="text-red-700 text-sm mt-1 font-medium">{info.pestOrDiseaseName}</p>
@@ -154,7 +159,7 @@ export const ResultsCard: React.FC<ResultsCardProps> = ({ prediction, imageUrl }
           )}
 
           {notRecognized && a?.supportedSpecies && a.supportedSpecies.length > 0 && (
-            <Section title="Cultivos que sí reconoce la app" icon={<FiTag className="w-4 h-4 text-green-600" />}>
+            <Section title={t('Cultivos que sí reconoce la app')} icon={<FiTag className="w-4 h-4 text-green-600" />}>
               <div className="flex flex-wrap gap-2">
                 {a.supportedSpecies.map((s) => (
                   <span key={s} className="text-sm px-3 py-1 bg-green-100 text-green-800 rounded-full">
@@ -167,7 +172,7 @@ export const ResultsCard: React.FC<ResultsCardProps> = ({ prediction, imageUrl }
 
           <div className="mb-6">
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-600">Confianza del análisis</span>
+              <span className="text-gray-600">{t('Confianza del análisis')}</span>
               <span className="font-bold text-gray-900">{(prediction.confidence * 100).toFixed(1)}%</span>
             </div>
             <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">

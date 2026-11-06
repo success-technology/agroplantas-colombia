@@ -49,6 +49,7 @@ const features = [
   }
 ];
 
+/** Resume las capacidades principales de la plataforma en tarjetas. */
 export const FeatureGrid: React.FC = () => {
   return (
     <section className="py-16">

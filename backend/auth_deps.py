@@ -18,6 +18,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def _get_user_from_token(token: str | None, db: Session) -> User | None:
+    """Resuelve un JWT a usuario, tratando ausencia o invalidez como anónimo."""
     if not token:
         return None
     payload = decode_access_token(token)

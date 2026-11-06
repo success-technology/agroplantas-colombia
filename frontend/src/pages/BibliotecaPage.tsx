@@ -2,11 +2,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiBook, FiChevronDown, FiChevronUp } from 'react-icons/fi';
-
-const API_BASE = import.meta.env.VITE_API_URL || '';
+import { API_BASE } from '../lib/apiBase';
+import { useLanguage } from '../lib/languageStore';
 
 // Traducción de las claves de cultivo que usa el backend a nombre + categoría en español.
 // Si aparece un cultivo nuevo que no está aquí, se muestra con un formato genérico igual.
+// Traduce las claves conocidas del modelo para presentarlas en el catálogo.
 const SPECIES_ES: Record<string, { name: string; category: string }> = {
   Apple: { name: 'Manzana', category: 'Frutal' },
   Blueberry: { name: 'Arándano', category: 'Frutal' },
@@ -32,6 +33,7 @@ const SPECIES_ES: Record<string, { name: string; category: string }> = {
   Papaya: { name: 'Papaya', category: 'Frutal' },
 };
 
+/** Normaliza una etiqueta interna para mostrarla como condición legible. */
 function prettifyCondition(raw: string): string {
   if (raw.toLowerCase() === 'healthy' || raw.toLowerCase() === 'sana') return 'Sana';
   return raw
@@ -40,6 +42,7 @@ function prettifyCondition(raw: string): string {
     .trim();
 }
 
+/** Resuelve nombre español/categoría con un fallback para claves nuevas. */
 function speciesInfo(key: string): { name: string; category: string } {
   if (SPECIES_ES[key]) return SPECIES_ES[key];
   return {
@@ -60,7 +63,9 @@ interface SpeciesCard {
   conditions: ConditionEntry[];
 }
 
+/** Construye la biblioteca agrupando las clases del modelo por especie. */
 export const BibliotecaPage: React.FC = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [species, setSpecies] = useState<SpeciesCard[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -97,6 +102,7 @@ export const BibliotecaPage: React.FC = () => {
       .catch(() => setError('No se pudo conectar con el backend para traer la lista de cultivos.'));
   }, []);
 
+  // Filtra especies por texto antes de agruparlas visualmente.
   const filtered = useMemo(() => {
     if (!species) return [];
     const q = search.trim().toLowerCase();
@@ -108,9 +114,9 @@ export const BibliotecaPage: React.FC = () => {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">Biblioteca de plantas</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('Biblioteca de plantas')}</h1>
       <p className="text-gray-500 mb-6">
-        Catálogo de los cultivos y estados que el modelo puede identificar en este momento.
+        {t('Catálogo de los cultivos y estados que el modelo puede identificar en este momento.')}
       </p>
 
       <div className="relative mb-6">
@@ -119,7 +125,7 @@ export const BibliotecaPage: React.FC = () => {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar cultivo o categoría..."
+          placeholder={t('Buscar cultivo o categoría...')}
           className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#283618]/30"
         />
       </div>
@@ -131,12 +137,12 @@ export const BibliotecaPage: React.FC = () => {
       )}
 
       {!species && !error && (
-        <div className="bg-white rounded-xl p-10 text-center text-gray-500">Cargando catálogo...</div>
+        <div className="bg-white rounded-xl p-10 text-center text-gray-500">{t('Cargando catálogo...')}</div>
       )}
 
       {species && filtered.length === 0 && (
         <div className="bg-white rounded-xl p-10 text-center text-gray-500">
-          No hay cultivos que coincidan con "{search}".
+          {t('No hay cultivos que coincidan con')} "{search}".
         </div>
       )}
 

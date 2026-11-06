@@ -1,5 +1,7 @@
 # Guía del Dataset — Kaggle Plants
 
+El modelo versionado en `models/` contiene 93 clases de estado en 21 especies. Los datasets descargados, ya preparados y sus manifiestos locales no necesariamente están incluidos en Git. Antes de sustituir o ampliar datos, confirma que las etiquetas conservan los nombres y orden esperados y registra licencia/procedencia.
+
 ## Paso 1: Crear cuenta y API en Kaggle
 
 1. Registrarse en [kaggle.com](https://www.kaggle.com)
@@ -49,6 +51,8 @@ data/processed/
 ```
 
 Proporciones por defecto: 70% train, 15% val, 15% test.
+
+Mantén las particiones independientes: evita duplicar imágenes o capturas de una misma secuencia entre train, validation y test. La evaluación de 93 clases requiere que test incluya todas las clases esperadas; consulta `docs/EVALUACION_PILOTO.md` antes de usar una métrica como resultado final.
 
 ## Estructuras reconocidas automáticamente
 

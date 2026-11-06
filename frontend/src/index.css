@@ -9,8 +9,26 @@ body {
   margin: 0;
 }
 
+html[data-font-scale='large'] {
+  font-size: 112.5%;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
 html.dark body {
   background: #182014;
+}
+
+.sidebar-glass {
+  background-color: rgb(254 250 224 / 0.92);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+  backdrop-filter: blur(24px) saturate(1.35);
+}
+
+html.dark .sidebar-glass {
+  background-color: rgb(18 27 19 / 0.97);
 }
 
 html.dark .bg-white {
@@ -40,6 +58,12 @@ html.dark select {
   color: #f5f5e8;
 }
 
+html.dark option,
+html.dark optgroup {
+  background-color: #24301f;
+  color: #f5f5e8;
+}
+
 html.dark .text-gray-900 {
   color: #f5f5e8;
 }
@@ -56,4 +80,38 @@ html.dark .text-gray-500 {
 html.dark .border-gray-100,
 html.dark .border-gray-200 {
   border-color: #43513b;
+}
+
+/* Los botones deben separarse visualmente de las tarjetas en tema oscuro. */
+html.dark button[class*="bg-[#283618]"] {
+  background-color: #dda15e;
+  color: #1d281d;
+}
+
+html.dark button[class*="bg-[#283618]"]:hover:not(:disabled) {
+  background-color: #efc083;
+}
+
+html.dark button[class*="border-gray-200"] {
+  border-color: #64745b;
+  background-color: #303d2a;
+  color: #f5f5e8;
+}
+
+html.dark button[class*="border-gray-200"]:hover:not(:disabled) {
+  background-color: #43513b;
+}
+
+html.dark button[class*="bg-red-600"] {
+  background-color: #b93832;
+  color: #fff;
+}
+
+html.dark button[class*="bg-red-600"]:hover:not(:disabled) {
+  background-color: #d34b43;
+}
+
+html.dark button:focus-visible {
+  outline: 3px solid #efc083;
+  outline-offset: 2px;
 }

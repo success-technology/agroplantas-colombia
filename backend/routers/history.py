@@ -19,6 +19,7 @@ def listar_historial(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Lista las identificaciones propias en orden cronológico descendente."""
     items = (
         db.query(Identification)
         .filter(Identification.user_id == current_user.id)
@@ -34,6 +35,7 @@ def crear_identificacion(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Guarda un resultado validado y lo asocia al usuario autenticado."""
     item = Identification(user_id=current_user.id, **payload.model_dump())
     db.add(item)
     db.commit()
@@ -47,6 +49,7 @@ def borrar_identificacion(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Elimina un registro solo si pertenece al usuario de la sesión."""
     item = (
         db.query(Identification)
         .filter(Identification.id == item_id, Identification.user_id == current_user.id)
@@ -67,6 +70,7 @@ def borrar_todo_el_historial(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Elimina todos los registros de historial del usuario actual."""
     db.query(Identification).filter(Identification.user_id == current_user.id).delete()
     db.commit()
     return {"ok": True}

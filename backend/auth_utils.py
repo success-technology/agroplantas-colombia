@@ -28,6 +28,8 @@ def hash_password(password: str) -> str:
 
 def verify_password(password: str, hashed_password: str) -> bool:
     """Verifica una contraseña en texto plano contra su hash."""
+    if len(password.encode("utf-8")) > 72:
+        return False
     return bcrypt.checkpw(
         password.encode("utf-8"), hashed_password.encode("utf-8")
     )

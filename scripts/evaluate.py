@@ -48,6 +48,7 @@ def load_class_names(path: Path) -> list[str]:
 
 
 def main():
+    """Evalúa el modelo sobre TEST y exporta reporte y matriz de confusión."""
     parser = argparse.ArgumentParser()
 
     parser.add_argument(

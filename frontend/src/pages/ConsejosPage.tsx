@@ -1,6 +1,7 @@
 // frontend/src/pages/ConsejosPage.tsx
 import React, { useState } from 'react';
 import { FiDroplet, FiSun, FiShield, FiRepeat, FiFeather, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { useLanguage } from '../lib/languageStore';
 
 interface Tip {
   title: string;
@@ -67,7 +68,9 @@ const TIPS: Tip[] = [
   },
 ];
 
+/** Filtra y presenta consejos generales organizados por categoría agrícola. */
 export const ConsejosPage: React.FC = () => {
+  const { t } = useLanguage();
   const [activeIndex, setActiveIndex] = useState(0);
   const activeTip = TIPS[activeIndex];
 
@@ -79,9 +82,9 @@ export const ConsejosPage: React.FC = () => {
     <div className="p-6 max-w-4xl mx-auto">
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Consejos y manejo</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('Consejos y manejo')}</h1>
           <p className="text-gray-500">
-            Recomendaciones generales para el cuidado de tus cultivos, explicadas de forma clara.
+            {t('Recomendaciones generales para el cuidado de tus cultivos, explicadas de forma clara.')}
           </p>
         </div>
         <span className="shrink-0 text-xs font-semibold text-gray-500 tabular-nums">
@@ -96,13 +99,13 @@ export const ConsejosPage: React.FC = () => {
             <span className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${activeTip.color}`}>
               {activeTip.icon}
             </span>
-            <h2 className="font-semibold text-gray-900 text-lg">{activeTip.title}</h2>
+            <h2 className="font-semibold text-gray-900 text-lg">{t(activeTip.title)}</h2>
           </div>
           <ul className="space-y-3.5 min-h-[220px]">
             {activeTip.items.map((item, itemIndex) => (
               <li key={itemIndex} className="text-sm text-gray-700 flex gap-2.5">
                 <span className="text-[#DDA15E] font-bold mt-0.5">•</span>
-                <span>{item}</span>
+                <span>{t(item)}</span>
               </li>
             ))}
           </ul>
@@ -111,18 +114,18 @@ export const ConsejosPage: React.FC = () => {
             <button
               type="button"
               onClick={() => moveCarousel(-1)}
-              aria-label="Consejo anterior"
+              aria-label={t('Consejo anterior')}
               className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               <FiChevronLeft className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-2" aria-label="Seleccionar categoría de consejos">
+            <div className="flex items-center gap-2" aria-label={t('Seleccionar categoría de consejos')}>
               {TIPS.map((tip, tipIndex) => (
                 <button
                   key={tip.title}
                   type="button"
                   onClick={() => setActiveIndex(tipIndex)}
-                  aria-label={`Ver consejos de ${tip.title}`}
+                  aria-label={`${t('Ver consejos de')} ${t(tip.title)}`}
                   aria-current={tipIndex === activeIndex ? 'step' : undefined}
                   className={`h-2 rounded-full transition-all ${tipIndex === activeIndex ? 'w-7 bg-[#283618] dark:bg-[#DDA15E]' : 'w-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400'}`}
                 />
@@ -131,7 +134,7 @@ export const ConsejosPage: React.FC = () => {
             <button
               type="button"
               onClick={() => moveCarousel(1)}
-              aria-label="Siguiente consejo"
+              aria-label={t('Siguiente consejo')}
               className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               <FiChevronRight className="w-5 h-5" />

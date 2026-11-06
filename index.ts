@@ -1,4 +1,4 @@
-// frontend/src/types/index.ts
+// Tipos heredados de una estructura anterior; la app Vite importa frontend/src/types.ts.
 export interface PredictionResult {
   className: string;
   confidence: number;

@@ -70,10 +70,11 @@ Esto genera `data/processed/{train,val,test}/<Cultivo>___<Estado>/` igual que
 antes, combinando el dataset original (si lo agregas también como fuente) con
 los nuevos.
 
-> Si quieres conservar el modelo de 38 clases actual y solo ENTRENAR con los
-> cultivos nuevos por separado primero (para probar más rápido), simplemente
+> El modelo versionado actualmente contiene 93 clases de estado agrupadas en
+> 21 especies. Si quieres ENTRENAR solo los cultivos nuevos por separado
+> primero (para probar más rápido), simplemente
 > deja en el manifiesto solo las fuentes nuevas. Si quieres el modelo final
-> con las 38 clases + las nuevas juntas, agrega también una fuente `type:
+> con las 93 clases actuales + las nuevas juntas, agrega también una fuente `type:
 > "folder"` apuntando a tu carpeta actual de PlantVillage.
 
 ## 5. Entrenar
@@ -90,10 +91,12 @@ Con más clases y más datos, considera subir `--epochs` (por ejemplo a 20-25) y
 vigilar `training_metrics.json` para ver si el modelo sigue mejorando o ya se
 estabilizó.
 
-## 6. Pendiente después de reentrenar
+## 6. Después de reentrenar
 
-El backend (`plant_knowledge.py`, `recommendations.py`, `supported_species.py`,
-`backend/data/plant_catalog.json`) necesita una entrada por cada clase nueva
-(nombre en español, tratamiento, prevención, etc.) o esas pantallas saldrán
-vacías para los cultivos nuevos. Eso lo resolvemos en otra sesión, después de
-confirmar que el modelo entrena bien con los datos nuevos.
+El backend (`backend/plant_knowledge.py`, `backend/recommendations.py` y
+`backend/supported_species.py`) necesita entradas para cada clase nueva
+(nombre en español, tratamiento, prevención, etc.) o la ficha quedará genérica
+o incompleta. Añade y revisa el conocimiento del catálogo antes de desplegar.
+Después valida el orden de las etiquetas, genera una evaluación multiclase
+independiente y realiza el piloto de campo descrito en
+`docs/EVALUACION_PILOTO.md`.

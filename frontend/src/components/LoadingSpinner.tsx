@@ -2,6 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
+/** Indica visualmente que una operación asíncrona sigue en curso. */
 export const LoadingSpinner: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center py-12">

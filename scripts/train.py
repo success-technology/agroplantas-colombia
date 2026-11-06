@@ -231,6 +231,7 @@ def get_species_from_class(class_name: str) -> str:
 # ============================================================
 
 def build_model(num_classes: int) -> tf.keras.Model:
+    """Construye MobileNetV2 congelada con cabeza para el número de clases."""
 
     base = MobileNetV2(
         weights="imagenet",
@@ -273,6 +274,7 @@ def build_model(num_classes: int) -> tf.keras.Model:
 # ============================================================
 
 def build_augmentation():
+    """Define transformaciones aleatorias aplicadas al conjunto de train."""
 
     return tf.keras.Sequential(
         [
@@ -312,6 +314,7 @@ def load_dataset(
     batch_size: int,
     shuffle: bool,
 ):
+    """Carga imágenes etiquetadas desde carpetas y forma lotes TensorFlow."""
 
     return tf.keras.utils.image_dataset_from_directory(
         directory,
@@ -333,8 +336,10 @@ def preprocess_dataset(
     dataset,
     augmentation=None,
 ):
+    """Normaliza lotes y aplica aumentación opcional sin alterar etiquetas."""
 
     def process(images, labels):
+        """Transforma un lote individual y conserva sus etiquetas."""
 
         images = tf.cast(
             images,
@@ -367,6 +372,7 @@ def calculate_class_weights(
     dataset,
     num_classes: int,
 ):
+    """Calcula pesos por frecuencia y limita el valor máximo de cada clase."""
 
     counts = [0] * num_classes
 
@@ -416,6 +422,7 @@ def calculate_species_weights(
     state_dataset,
     state_class_names,
 ):
+    """Cuenta ejemplos por especie y calcula sus pesos de balance."""
 
     species_to_id = {
         name: i
@@ -474,6 +481,7 @@ def convert_state_to_species_dataset(
     dataset,
     state_class_names,
 ):
+    """Convierte etiquetas de estado a especie para entrenar la primera etapa."""
 
     species_to_id = {
         name: i
@@ -504,6 +512,7 @@ def convert_state_to_species_dataset(
     )
 
     def convert(images, state_labels):
+        """Mapea cada etiqueta del lote a su índice de especie correspondiente."""
 
         species_labels = tf.gather(
             mapping,
@@ -526,6 +535,7 @@ def create_callbacks(
     output_dir: Path,
     checkpoint_name: str,
 ):
+    """Configura parada temprana, reducción de tasa y guardado del checkpoint."""
 
     return [
         EarlyStopping(
@@ -568,6 +578,10 @@ def train_stage(
     initial_epochs: int,
     fine_tune_epochs: int,
 ):
+    """Entrena cabeza congelada, afina las últimas capas y restaura checkpoint.
+
+    Devuelve el modelo con los mejores pesos y métricas finales de train/val.
+    """
 
     print("")
     print("=" * 70)
@@ -725,6 +739,7 @@ def train_stage(
 # ============================================================
 
 def main():
+    """Configura datos, entrena especie y estado y guarda artefactos/metadatos."""
 
     parser = argparse.ArgumentParser()
 

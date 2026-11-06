@@ -4,28 +4,59 @@ import { useNavigate } from 'react-router-dom';
 import { FiCamera, FiSearch, FiDroplet, FiSun, FiMoreVertical } from 'react-icons/fi';
 import { CameraCapture } from '../components/CameraCapture';
 import { getHistory, getLastIdentification, HistoryItem } from '../lib/historyStore';
+import {
+  fetchGuestQuotaStatus,
+  getCachedGuestRemaining,
+} from '../lib/guestQuota';
+import { useLanguage } from '../lib/languageStore';
 
+/** Presenta el inicio, el estado de cuota y accesos a las funciones principales. */
 export const HomePage: React.FC = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const [showCamera, setShowCamera] = useState(false);
+  const [guestRemaining, setGuestRemaining] = useState(getCachedGuestRemaining);
   const [recentItems, setRecentItems] = useState<HistoryItem[]>([]);
   const [lastIdentification, setLastIdentification] = useState<HistoryItem | null>(null);
 
   useEffect(() => {
     getHistory().then((items) => setRecentItems(items.slice(0, 4)));
     getLastIdentification().then(setLastIdentification);
+    fetchGuestQuotaStatus().then((quota) => {
+      setGuestRemaining(quota.remaining);
+    }).catch(() => {
+      setGuestRemaining(getCachedGuestRemaining());
+    });
+    const handleQuotaUpdate = (event: Event) => {
+      setGuestRemaining((event as CustomEvent<number>).detail);
+    };
+    const handleProfileUpdate = () => {
+      fetchGuestQuotaStatus().then((quota) => setGuestRemaining(quota.remaining)).catch(() => undefined);
+    };
+    window.addEventListener('agroplantas:guest-quota-updated', handleQuotaUpdate);
+    window.addEventListener('agroplantas:profile-updated', handleProfileUpdate);
+    const quotaRefresh = window.setInterval(() => {
+      fetchGuestQuotaStatus().then((quota) => setGuestRemaining(quota.remaining)).catch(() => undefined);
+    }, 60_000);
+    return () => {
+      window.clearInterval(quotaRefresh);
+      window.removeEventListener('agroplantas:guest-quota-updated', handleQuotaUpdate);
+      window.removeEventListener('agroplantas:profile-updated', handleProfileUpdate);
+    };
   }, []);
 
   const goToIdentificarWithFile = (file: File) => {
     navigate('/identificar', { state: { incomingFile: file } });
   };
 
+  // Recibe la foto capturada y la entrega al flujo de identificación.
   const handleCameraCapture = (file: File) => {
     setShowCamera(false);
     goToIdentificarWithFile(file);
   };
 
+  // Normaliza el archivo seleccionado antes de pasarlo al analizador.
   const handleGallerySelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -37,8 +68,11 @@ export const HomePage: React.FC = () => {
   return (
     <div className="flex flex-col xl:flex-row">
       <div className="flex-1 min-w-0 p-6">
-        <h1 className="text-2xl font-bold text-gray-900">¡Hola, Agricultor!</h1>
-        <p className="text-gray-500 mt-1">Identifica tus plantas y toma mejores decisiones.</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('Bienvenido a AgroPlantas')}</h1>
+        <p className="text-gray-500 mt-1">{t('Identifica tus plantas y toma mejores decisiones.')}</p>
+        <p className="mt-3 inline-flex rounded-full bg-[#e9e2ca] px-3 py-1 text-xs font-semibold text-[#39472d] dark:bg-[#303d2a] dark:text-[#e6b16c]">
+          {t('Análisis gratuitos disponibles')}: {guestRemaining}/6
+        </p>
 
         <div className="grid md:grid-cols-2 gap-4 mt-6">
           {/* Tarjeta: tomar/subir foto */}
@@ -46,24 +80,24 @@ export const HomePage: React.FC = () => {
             <span className="w-14 h-14 rounded-full bg-[#FEFAE0] flex items-center justify-center mb-4">
               <FiCamera className="w-6 h-6 text-[#283618]" />
             </span>
-            <h3 className="font-semibold text-gray-900">Toma una foto de la planta</h3>
-            <p className="text-sm text-gray-500 mt-1 mb-4">
-              o sube una imagen desde tu galería
-            </p>
+            <h3 className="font-semibold text-gray-900">{t('Toma una foto de la planta')}</h3>
+            <p className="text-sm text-gray-500 mt-1 mb-4">{t('o sube una imagen desde tu galería')}</p>
             <button
               type="button"
               onClick={() => setShowCamera(true)}
-              className="inline-flex items-center gap-2 bg-[#283618] hover:bg-[#1e290f] text-white rounded-lg px-5 py-2.5 text-sm font-medium transition-colors"
+              disabled={guestRemaining <= 0}
+              className="inline-flex items-center gap-2 bg-[#283618] hover:bg-[#1e290f] disabled:cursor-not-allowed disabled:opacity-50 text-white rounded-lg px-5 py-2.5 text-sm font-medium transition-colors"
             >
               <FiCamera className="w-4 h-4" />
-              Tomar foto
+              {t('Tomar foto')}
             </button>
             <button
               type="button"
               onClick={() => galleryInputRef.current?.click()}
-              className="text-xs text-gray-500 underline mt-3 hover:text-gray-700"
+              disabled={guestRemaining <= 0}
+              className="text-xs text-gray-500 underline mt-3 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Subir imagen
+              {t('Subir imagen')}
             </button>
             <input
               ref={galleryInputRef}
@@ -76,26 +110,24 @@ export const HomePage: React.FC = () => {
 
           {/* Tarjeta: recomendaciones rápidas */}
           <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h3 className="font-semibold text-gray-900 mb-4">Recomendaciones rápidas</h3>
+            <h3 className="font-semibold text-gray-900 mb-4">{t('Recomendaciones rápidas')}</h3>
             <ul className="space-y-4 text-sm">
               <li className="flex gap-3">
                 <FiSearch className="w-5 h-5 text-[#283618] shrink-0 mt-0.5" />
                 <span className="text-gray-600">
-                  Revisa el estado de tus cultivos constantemente para detectar problemas a
-                  tiempo.
+                  {t('Revisa el estado de tus cultivos constantemente para detectar problemas a tiempo.')}
                 </span>
               </li>
               <li className="flex gap-3">
                 <FiDroplet className="w-5 h-5 text-[#283618] shrink-0 mt-0.5" />
                 <span className="text-gray-600">
-                  Riega tus plantas en las horas adecuadas para un mejor aprovechamiento del
-                  agua.
+                  {t('Riega tus plantas en las horas adecuadas para un mejor aprovechamiento del agua.')}
                 </span>
               </li>
               <li className="flex gap-3">
                 <FiSun className="w-5 h-5 text-[#DDA15E] shrink-0 mt-0.5" />
                 <span className="text-gray-600">
-                  Nutre el suelo y tus plantas con fertilizantes orgánicos.
+                  {t('Nutre el suelo y tus plantas con fertilizantes orgánicos.')}
                 </span>
               </li>
             </ul>
@@ -103,20 +135,20 @@ export const HomePage: React.FC = () => {
         </div>
 
         <div className="flex items-center justify-between mt-8 mb-4">
-          <h2 className="font-semibold text-gray-900">Mis identificaciones recientes</h2>
+          <h2 className="font-semibold text-gray-900">{t('Mis identificaciones recientes')}</h2>
           {recentItems.length > 0 && (
             <button
               onClick={() => navigate('/mis-identificaciones')}
               className="text-sm text-[#283618] font-medium hover:underline"
             >
-              Ver todas →
+              {t('Ver todas →')}
             </button>
           )}
         </div>
 
         {recentItems.length === 0 ? (
           <div className="bg-white rounded-xl p-8 text-center text-gray-500 text-sm">
-            Aún no tienes identificaciones. Toma o sube una foto para empezar.
+            {t('Aún no tienes identificaciones. Toma o sube una foto para empezar.')}
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -150,7 +182,7 @@ export const HomePage: React.FC = () => {
       <aside className="w-full xl:w-80 shrink-0 p-6 space-y-4">
         <div className="bg-[#283618] text-white rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-4 pt-4">
-            <h3 className="text-sm font-semibold">Última identificación</h3>
+            <h3 className="text-sm font-semibold">{t('Última identificación')}</h3>
             {lastIdentification && <FiMoreVertical className="w-4 h-4 opacity-70" />}
           </div>
 
@@ -167,12 +199,12 @@ export const HomePage: React.FC = () => {
                 </span>
               </div>
               <div className="px-4 pb-4">
-                <p className="text-xs text-[#FEFAE0]/70">Resultado</p>
+                <p className="text-xs text-[#FEFAE0]/70">{t('Resultado')}</p>
                 <p className="text-lg font-bold">{lastIdentification.title}</p>
                 <span className="inline-block mt-2 bg-[#DDA15E] text-white text-xs font-medium rounded-full px-3 py-1">
                   {lastIdentification.isHealthy ? 'Sana' : lastIdentification.hasDisease ? 'Enfermedad' : lastIdentification.hasPest ? 'Plaga' : lastIdentification.statusLabel || '—'}
                 </span>
-                <p className="text-xs text-[#FEFAE0]/70 mt-3">Cultivo afectado</p>
+                <p className="text-xs text-[#FEFAE0]/70 mt-3">{t('Cultivo afectado')}</p>
                 <p className="text-sm">{lastIdentification.crop}</p>
                 <button
                   onClick={() => navigate('/mis-identificaciones')}

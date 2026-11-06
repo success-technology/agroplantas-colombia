@@ -1,14 +1,17 @@
+/** Probabilidad de una clase devuelta por el clasificador. */
 export interface Probability {
   className: string;
   probability: number;
 }
 
+/** Condiciones ambientales generales que acompañan una ficha agronómica. */
 export interface EnvironmentalFactors {
   temperature: string;
   humidity: string;
   sunlight: string;
 }
 
+/** Información agronómica y acciones sugeridas para una clase detectada. */
 export interface PlantInfo {
   title: string;
   description: string;
@@ -37,6 +40,7 @@ export interface PlantInfo {
 
 export type Recommendation = PlantInfo;
 
+/** Resumen interpretado: reconocimiento, confianza y tipo de condición. */
 export interface AnalysisSummary {
   recognized: boolean;
   speciesName: string;
@@ -54,6 +58,7 @@ export interface AnalysisSummary {
   weakGuessConfidence?: number | null;
 }
 
+/** Resultado completo de una identificación enviado por el backend. */
 export interface PredictionResult {
   className: string;
   confidence: number;
@@ -64,6 +69,7 @@ export interface PredictionResult {
   lowConfidence?: boolean;
 }
 
+/** Envoltura HTTP de una predicción y su duración de procesamiento. */
 export interface PredictionResponse {
   success: boolean;
   prediction?: PredictionResult;
@@ -71,6 +77,7 @@ export interface PredictionResponse {
   processingTime: number;
 }
 
+/** Estado agregado del backend, servicio ML y clases disponibles. */
 export interface HealthStatus {
   status: string;
   model_loaded: boolean;

@@ -41,6 +41,7 @@ predictor = ModelPredictor()
 
 
 class PredictOut(BaseModel):
+    """Contrato HTTP: probabilidades de condición y de especie, alineadas con sus etiquetas."""
     class_names: list[str]
     probabilities: list[float]
 
@@ -51,6 +52,7 @@ class PredictOut(BaseModel):
 
 @app.get("/")
 async def root():
+    """Confirma que el proceso ML responde."""
     return {
         "service": "ml-service",
         "status": "operational",
@@ -59,6 +61,7 @@ async def root():
 
 @app.get("/health")
 async def health():
+    """Publica disponibilidad del predictor y número de clases cargadas."""
     return {
         "status": "healthy",
         "model_loaded": predictor.model is not None,
@@ -73,6 +76,7 @@ async def health():
 
 @app.get("/classes")
 async def classes():
+    """Devuelve los nombres ordenados que corresponden a salidas del modelo."""
     return {
         "classes": predictor.get_class_names(),
         "species": predictor.get_species_class_names(),
@@ -81,6 +85,7 @@ async def classes():
 
 @app.post("/predict", response_model=PredictOut)
 async def predict(file: UploadFile = File(...)):
+    """Valida la imagen y entrega las probabilidades calculadas por el predictor."""
     if (
         not file.content_type
         or not file.content_type.startswith("image/")

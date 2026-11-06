@@ -1,21 +1,25 @@
+"""Esquemas Pydantic de predicción y ficha que conectan backend con UI."""
+
 from typing import List, Optional
 
 from pydantic import BaseModel
 
 
 class Probability(BaseModel):
+    """Una etiqueta del modelo y su probabilidad estimada."""
     className: str
     probability: float
 
 
 class EnvironmentalFactors(BaseModel):
+    """Resumen ambiental mostrado como referencia en la ficha."""
     temperature: str
     humidity: str
     sunlight: str
 
 
 class PlantInfo(BaseModel):
-    """Ficha agronómica completa para el agricultor."""
+    """Ficha agronómica orientativa que acompaña la identificación."""
     title: str
     description: str
     severity: str  # low | medium | high
@@ -46,6 +50,7 @@ Recommendation = PlantInfo
 
 
 class AnalysisSummary(BaseModel):
+    """Interpretación de especie, confianza, estado y posibles alternativas."""
     recognized: bool = True
     speciesName: str
     speciesConfidence: float
@@ -63,6 +68,7 @@ class AnalysisSummary(BaseModel):
 
 
 class PredictionResult(BaseModel):
+    """Resultado de una imagen, con probabilidades y datos agronómicos."""
     className: str
     confidence: float
     probabilities: List[Probability]
@@ -73,6 +79,7 @@ class PredictionResult(BaseModel):
 
 
 class PredictionResponse(BaseModel):
+    """Envoltura HTTP común para resultado y duración de la inferencia."""
     success: bool
     prediction: Optional[PredictionResult] = None
     error: Optional[str] = None

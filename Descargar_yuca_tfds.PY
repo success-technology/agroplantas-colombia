@@ -61,6 +61,7 @@ LABEL_MAP = {
 
 
 def export_split(ds, class_names, split_name: str, counters: dict):
+    """Exporta ejemplos del split TFDS a carpetas por condición en JPEG."""
     for example in tfds.as_numpy(ds):
         label_idx = example["label"]
         label_name = class_names[label_idx]
@@ -79,6 +80,7 @@ def export_split(ds, class_names, split_name: str, counters: dict):
 
 
 def main():
+    """Descarga Cassava desde TFDS y exporta train, validation y test."""
     print("Descargando dataset 'cassava' de TensorFlow Datasets...")
     print("(la primera vez puede tardar varios minutos, según tu conexión)")
 

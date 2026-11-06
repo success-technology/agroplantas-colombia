@@ -4,10 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { FiClock, FiArrowLeft } from 'react-icons/fi';
 import { getHistory, HistoryItem } from '../lib/historyStore';
 import { ResultsCard } from '../components/ResultsCard';
+import { useLanguage } from '../lib/languageStore';
 
 function groupLabel(timestamp: number): string {
+  /** Clasifica una fecha en una etiqueta de grupo para ordenar el historial. */
   const now = new Date();
   const date = new Date(timestamp);
+  // Normaliza hora para comparar días del calendario sin comparar minutos.
   const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const diffDays = Math.round((startOfDay(now) - startOfDay(date)) / 86400000);
 
@@ -18,7 +21,9 @@ function groupLabel(timestamp: number): string {
   return 'Más antiguo';
 }
 
+/** Permite revisar y eliminar resultados históricos propios. */
 export const HistorialPage: React.FC = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [selected, setSelected] = useState<HistoryItem | null>(null);
@@ -52,15 +57,15 @@ export const HistorialPage: React.FC = () => {
   if (items.length === 0) {
     return (
       <div className="p-6 max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Historial</h1>
-        <p className="text-gray-500 mb-6">Registro cronológico de todas tus consultas.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('Historial')}</h1>
+        <p className="text-gray-500 mb-6">{t('Registro cronológico de todas tus consultas.')}</p>
         <div className="bg-white rounded-xl p-10 text-center text-gray-500">
           Aún no tienes identificaciones. Ve a{' '}
           <button
             onClick={() => navigate('/identificar')}
             className="text-[#283618] font-medium hover:underline"
           >
-            Identificar planta
+            {t('Identificar planta')}
           </button>{' '}
           para empezar.
         </div>
@@ -80,15 +85,15 @@ export const HistorialPage: React.FC = () => {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">Historial</h1>
-      <p className="text-gray-500 mb-6">Registro cronológico de todas tus consultas.</p>
+      <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('Historial')}</h1>
+      <p className="text-gray-500 mb-6">{t('Registro cronológico de todas tus consultas.')}</p>
 
       <div className="space-y-8">
         {orderedLabels.map((label) => (
           <div key={label}>
             <div className="flex items-center gap-2 mb-3">
               <FiClock className="w-4 h-4 text-gray-400" />
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">{label}</h2>
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">{t(label)}</h2>
             </div>
             <div className="space-y-2 border-l-2 border-gray-100 pl-4">
               {groups.get(label)!.map((item) => (

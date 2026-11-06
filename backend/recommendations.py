@@ -16,6 +16,7 @@ CATALOG_PATH = Path(__file__).parent / "data" / "plant_catalog.json"
 
 
 def _load_catalog() -> dict:
+    """Carga una vez el catálogo local usado para completar fichas."""
     if CATALOG_PATH.exists():
         with open(CATALOG_PATH, encoding="utf-8") as f:
             return json.load(f)
@@ -23,12 +24,14 @@ def _load_catalog() -> dict:
 
 
 def _find_catalog_entry(catalog: dict, class_name: str) -> dict | None:
+    """Busca una entrada que corresponda a la etiqueta predicha."""
     if class_name in catalog:
         return catalog[class_name]
     return None
 
 
 def _health_status(kind: str, plant_es: str, cond_es: str) -> str:
+    """Traduce el tipo de condición a un estado sanitario legible."""
     if kind == "healthy":
         return f"{plant_es} — Sano"
     if kind == "pest":
@@ -43,6 +46,7 @@ def _health_status(kind: str, plant_es: str, cond_es: str) -> str:
 
 
 def _severity(kind: str, confidence: float) -> str:
+    """Asigna severidad orientativa según la clase y la confianza."""
     if kind == "healthy":
         base = "low"
     elif kind in ("viral", "citrus"):
@@ -124,6 +128,7 @@ def build_plant_info(class_name: str, confidence: float) -> PlantInfo:
 
 
 def _from_catalog(entry: dict, class_name: str, confidence: float) -> PlantInfo:
+    """Mapea un registro del catálogo al esquema de respuesta del API."""
     env = entry.get("environmental", {})
     severity = entry.get("severity", "medium")
     if confidence < 0.5:
@@ -213,6 +218,7 @@ def build_unknown_plant_info(analysis: dict) -> PlantInfo:
 
 
 def generate_recommendations(class_name: str, confidence: float, analysis: dict | None = None) -> PlantInfo:
+    """Construye la ficha agronómica final para una clase y un análisis."""
     if analysis and not analysis.get("recognized", True):
         return build_unknown_plant_info(analysis)
     return build_plant_info(class_name, confidence)

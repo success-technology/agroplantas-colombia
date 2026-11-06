@@ -349,6 +349,7 @@ def classify_condition(cond_key: str, cond_es: str) -> str:
 
 
 def colombia_regions(category: str, plant_es: str) -> list[str]:
+    """Sugiere regiones colombianas asociadas al cultivo del catálogo."""
     mapping = {
         "Tomate": ["Boyacá", "Cundinamarca", "Antioquia", "Santander", "Nariño"],
         "Papa": ["Boyacá", "Nariño", "Cundinamarca", "Antioquia"],
@@ -371,6 +372,7 @@ def colombia_regions(category: str, plant_es: str) -> list[str]:
 
 
 def season_for(kind: str, plant_es: str) -> str:
+    """Devuelve una pauta estacional general según cultivo y tipo de riesgo."""
     if kind == "healthy":
         return f"Monitoreo continuo del {plant_es.lower()}; siembra según calendario regional ICA"
     if kind in ("fungal", "bacterial"):

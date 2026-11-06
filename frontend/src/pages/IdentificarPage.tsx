@@ -8,11 +8,21 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ModelStatus } from '../components/ModelStatus';
 import { PredictionResult, HealthStatus } from '../types';
 import { saveIdentification } from '../lib/historyStore';
-import { isLoggedIn } from '../lib/authStore';
+import { authHeader } from '../lib/authStore';
+import { API_BASE } from '../lib/apiBase';
+import {
+  getCachedGuestRemaining,
+  guestHeaders,
+  fetchGuestQuotaStatus,
+  setGuestRemaining,
+} from '../lib/guestQuota';
+import { notifyAnalysisComplete } from '../lib/notifications';
+import { useLanguage } from '../lib/languageStore';
+import { COMMERCIAL_PLANS_ENABLED } from '../lib/features';
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
-
+/** Controla carga/cámara, cuota, petición de análisis y persistencia del resultado. */
 export const IdentificarPage: React.FC = () => {
+  const { language, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
@@ -20,6 +30,7 @@ export const IdentificarPage: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [health, setHealth] = useState<HealthStatus | null>(null);
+  const [guestRemaining, setGuestRemainingState] = useState(getCachedGuestRemaining);
   const processedIncomingFile = useRef(false);
 
   useEffect(() => {
@@ -29,7 +40,39 @@ export const IdentificarPage: React.FC = () => {
       .catch(() => setHealth(null));
   }, []);
 
+  useEffect(() => {
+    fetchGuestQuotaStatus().then((quota) => {
+      setGuestRemainingState(quota.remaining);
+    }).catch(() => {
+      setGuestRemainingState(getCachedGuestRemaining());
+    });
+    const handleQuotaUpdate = (event: Event) => {
+      setGuestRemainingState((event as CustomEvent<number>).detail);
+    };
+    const handleProfileUpdate = () => {
+      fetchGuestQuotaStatus().then((quota) => setGuestRemainingState(quota.remaining)).catch(() => undefined);
+    };
+    window.addEventListener('agroplantas:guest-quota-updated', handleQuotaUpdate);
+    window.addEventListener('agroplantas:profile-updated', handleProfileUpdate);
+    const quotaRefresh = window.setInterval(() => {
+      fetchGuestQuotaStatus().then((quota) => setGuestRemainingState(quota.remaining)).catch(() => undefined);
+    }, 60_000);
+    return () => {
+      window.clearInterval(quotaRefresh);
+      window.removeEventListener('agroplantas:guest-quota-updated', handleQuotaUpdate);
+      window.removeEventListener('agroplantas:profile-updated', handleProfileUpdate);
+    };
+  }, []);
+
+  // Paso central: valida cuota, envía imagen, consume cuota y guarda historial.
   const handleImageUpload = async (file: File) => {
+    if (guestRemaining <= 0) {
+      setGuestRemaining(0);
+      return;
+    }
+
+    setGuestRemainingState(Math.max(0, guestRemaining - 1));
+
     setIsUploading(true);
     setError(null);
     setPrediction(null);
@@ -41,12 +84,27 @@ export const IdentificarPage: React.FC = () => {
     try {
       const response = await fetch(`${API_BASE}/api/predict`, {
         method: 'POST',
+        headers: { ...authHeader(), ...guestHeaders() },
         body: formData,
       });
+
+      const remainingHeader = response.headers.get('X-Analysis-Remaining') || response.headers.get('X-Guest-Remaining');
+      if (remainingHeader !== null) {
+        const remaining = Number(remainingHeader);
+        if (Number.isInteger(remaining)) {
+          setGuestRemainingState(remaining);
+          setGuestRemaining(remaining);
+        }
+      }
 
       if (!response.ok) {
         const err = await response.json();
         const msg = err.detail || 'Error al procesar la imagen';
+        if (response.status === 429) {
+          setGuestRemainingState(0);
+          setGuestRemaining(0);
+          return;
+        }
         if (response.status === 503) {
           throw new Error(
             `${msg}. El modelo debe entrenarse con tu dataset PlantVillage (scripts/train.py).`
@@ -73,6 +131,10 @@ export const IdentificarPage: React.FC = () => {
         pred.plantInfo = pred.recommendations;
       }
       setPrediction(pred);
+      if (pred) {
+        const plantName = pred.analysis?.speciesName || pred.plantInfo?.plantType || pred.className || 'Planta';
+        void notifyAnalysisComplete(plantName, language);
+      }
 
       if (pred) {
         try {
@@ -82,6 +144,13 @@ export const IdentificarPage: React.FC = () => {
         }
       }
     } catch (e) {
+      try {
+        const quota = await fetchGuestQuotaStatus();
+        setGuestRemainingState(quota.remaining);
+        setGuestRemaining(quota.remaining);
+      } catch {
+        // La próxima visita actualizará el estado desde el servidor.
+      }
       setError(e instanceof Error ? e.message : 'Error de conexión con el servidor');
       setSelectedImage(null);
     } finally {
@@ -89,6 +158,7 @@ export const IdentificarPage: React.FC = () => {
     }
   };
 
+  // Limpia imagen, error y resultado para iniciar otra identificación.
   const handleReset = () => {
     setPrediction(null);
     setSelectedImage(null);
@@ -108,21 +178,15 @@ export const IdentificarPage: React.FC = () => {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">Identificar planta</h1>
-      <p className="text-gray-500 mb-6">
-        Sube una foto y obtén diagnóstico, confianza y recomendaciones agronómicas.
-      </p>
+      <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('Identificar planta')}</h1>
+      <p className="text-gray-500 mb-6">{t('Sube una foto y obtén diagnóstico, confianza y recomendaciones agronómicas.')}</p>
 
       {health && <ModelStatus health={health} />}
 
-      {!isLoggedIn() && (
-        <div className="mb-4 text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-4 py-2.5">
-          No has iniciado sesión — puedes identificar tu planta igual, pero el resultado no se
-          guardará en tu historial.
-        </div>
-      )}
-
-      <UploadZone onImageUpload={handleImageUpload} disabled={isUploading} />
+      <UploadZone
+        onImageUpload={handleImageUpload}
+        disabled={isUploading || guestRemaining <= 0}
+      />
 
       <AnimatePresence>
         {isUploading && (
@@ -135,6 +199,7 @@ export const IdentificarPage: React.FC = () => {
       {error && (
         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
           {error}
+          {guestRemaining <= 0 && COMMERCIAL_PLANS_ENABLED && <button type="button" onClick={() => navigate('/planes')} className="ml-2 font-semibold underline">{t('Ver planes')}</button>}
           <p className="text-sm mt-2 text-red-600">
             Verifica que el backend esté activo: <code>uvicorn backend.main:app --reload</code>
           </p>
@@ -148,7 +213,7 @@ export const IdentificarPage: React.FC = () => {
             onClick={handleReset}
             className="mt-4 w-full py-3 text-[#283618] font-medium hover:bg-[#283618]/5 rounded-xl transition-colors"
           >
-            Analizar otra imagen
+            {t('Analizar otra imagen')}
           </button>
         </motion.div>
       )}

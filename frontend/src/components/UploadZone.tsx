@@ -3,15 +3,19 @@ import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion } from 'framer-motion';
 import { FiUpload, FiCamera, FiImage } from 'react-icons/fi';
+import { useLanguage } from '../lib/languageStore';
 
 interface UploadZoneProps {
   onImageUpload: (file: File) => void;
   disabled?: boolean;
 }
 
+/** Acepta una imagen arrastrada o seleccionada y la entrega a su página padre. */
 export const UploadZone: React.FC<UploadZoneProps> = ({ onImageUpload, disabled }) => {
+  const { t } = useLanguage();
   const [isDragging, setIsDragging] = useState(false);
 
+  // Entrega solo el primer archivo aceptado por el filtro de react-dropzone.
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       onImageUpload(acceptedFiles[0]);
@@ -50,7 +54,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onImageUpload, disabled 
 
         <div className="p-12 text-center">
           <p className="text-gray-500 mb-4 text-sm max-w-lg mx-auto">
-            Agrega una imagen del cultivo que deseas identificar y deja que AgroPlantas Colombia lo haga por ti.
+            {t('Agrega una imagen del cultivo que deseas identificar y deja que AgroPlantas Colombia lo haga por ti.')}
           </p>
           <motion.div
             animate={{ y: isDragging ? -10 : 0 }}
@@ -62,16 +66,16 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onImageUpload, disabled 
           </motion.div>
 
           <h3 className="text-2xl font-semibold text-gray-800 mb-2">
-            {isDragging ? 'Suelta la imagen aquí' : 'Sube una imagen de tu cultivo'}
+            {isDragging ? t('Suelta la imagen aquí') : t('Sube una imagen de tu cultivo')}
           </h3>
 
           <p className="text-gray-500 mb-4">
-            Arrastra y suelta o haz clic para seleccionar
+            {t('Arrastra y suelta o haz clic para seleccionar')}
           </p>
 
           <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
             <FiImage className="w-4 h-4" />
-            <span>JPG, PNG, WEBP (Máx. 10MB)</span>
+            <span>{t('JPG, PNG, WEBP (Máx. 10MB)')}</span>
           </div>
         </div>
 

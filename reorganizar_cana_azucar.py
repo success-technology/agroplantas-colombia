@@ -39,6 +39,7 @@ FOLDER_MAP = {
 
 
 def main():
+    """Reemplaza carpetas de caña seleccionadas y conserva Bacteriosis intacta."""
     if not SOURCE_DIR.exists():
         raise SystemExit(f"No existe SOURCE_DIR: {SOURCE_DIR}\n"
                           f"Ajusta la ruta al inicio del script.")

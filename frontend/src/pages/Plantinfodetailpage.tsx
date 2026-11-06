@@ -14,8 +14,8 @@ import {
   FiTool,
 } from 'react-icons/fi';
 import { PlantInfo } from '../types';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { API_BASE } from '../lib/apiBase';
+import { useLanguage } from '../lib/languageStore';
 
 const SEVERITY_STYLES: Record<string, { bg: string; text: string; label: string }> = {
   low: { bg: 'bg-green-100', text: 'text-green-800', label: 'Severidad baja' },
@@ -23,7 +23,9 @@ const SEVERITY_STYLES: Record<string, { bg: string; text: string; label: string 
   high: { bg: 'bg-red-100', text: 'text-red-800', label: 'Severidad alta' },
 };
 
+/** Consulta y presenta la ficha agronómica de una clase del catálogo. */
 export const PlantInfoDetailPage: React.FC = () => {
+  const { t } = useLanguage();
   const { className } = useParams<{ className: string }>();
   const navigate = useNavigate();
   const [info, setInfo] = useState<PlantInfo | null>(null);
@@ -57,7 +59,7 @@ export const PlantInfoDetailPage: React.FC = () => {
       </button>
 
       {loading && (
-        <div className="bg-white rounded-xl p-10 text-center text-gray-500">Cargando información...</div>
+        <div className="bg-white rounded-xl p-10 text-center text-gray-500">{t('Cargando información...')}</div>
       )}
 
       {error && (
@@ -98,7 +100,7 @@ export const PlantInfoDetailPage: React.FC = () => {
 
           {/* Estado */}
           <div className="bg-white rounded-xl shadow-sm p-5">
-            <h2 className="font-semibold text-gray-900 text-sm mb-2">Estado</h2>
+            <h2 className="font-semibold text-gray-900 text-sm mb-2">{t('Estado')}</h2>
             <p className="text-sm text-gray-700">{info.healthStatus}</p>
             <p className="text-sm text-gray-600 mt-1">{info.condition}</p>
           </div>
@@ -108,7 +110,7 @@ export const PlantInfoDetailPage: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm p-5">
               <div className="flex items-center gap-2 mb-3">
                 <FiTool className="w-4 h-4 text-[#283618]" />
-                <h2 className="font-semibold text-gray-900 text-sm">Tratamiento recomendado</h2>
+                <h2 className="font-semibold text-gray-900 text-sm">{t('Tratamiento recomendado')}</h2>
               </div>
               <ul className="space-y-2">
                 {info.treatment.map((t, i) => (
@@ -126,7 +128,7 @@ export const PlantInfoDetailPage: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm p-5">
               <div className="flex items-center gap-2 mb-3">
                 <FiAlertTriangle className="w-4 h-4 text-[#DDA15E]" />
-                <h2 className="font-semibold text-gray-900 text-sm">Posibles causas</h2>
+                <h2 className="font-semibold text-gray-900 text-sm">{t('Posibles causas')}</h2>
               </div>
               <ul className="space-y-2">
                 {info.possibleCauses.map((c, i) => (
@@ -144,7 +146,7 @@ export const PlantInfoDetailPage: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm p-5">
               <div className="flex items-center gap-2 mb-3">
                 <FiShield className="w-4 h-4 text-[#283618]" />
-                <h2 className="font-semibold text-gray-900 text-sm">Prevención</h2>
+                <h2 className="font-semibold text-gray-900 text-sm">{t('Prevención')}</h2>
               </div>
               <ul className="space-y-2">
                 {info.prevention.map((p, i) => (
@@ -159,21 +161,21 @@ export const PlantInfoDetailPage: React.FC = () => {
 
           {/* Condiciones ambientales */}
           <div className="bg-white rounded-xl shadow-sm p-5">
-            <h2 className="font-semibold text-gray-900 text-sm mb-3">Condiciones ambientales</h2>
+            <h2 className="font-semibold text-gray-900 text-sm mb-3">{t('Condiciones ambientales')}</h2>
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="bg-gray-50 rounded-lg p-3">
                 <FiThermometer className="w-4 h-4 mx-auto text-[#283618] mb-1" />
-                <p className="text-xs text-gray-500">Temperatura</p>
+                <p className="text-xs text-gray-500">{t('Temperatura')}</p>
                 <p className="text-sm font-medium text-gray-900">{info.environmental.temperature}</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-3">
                 <FiDroplet className="w-4 h-4 mx-auto text-[#283618] mb-1" />
-                <p className="text-xs text-gray-500">Humedad</p>
+                <p className="text-xs text-gray-500">{t('Humedad')}</p>
                 <p className="text-sm font-medium text-gray-900">{info.environmental.humidity}</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-3">
                 <FiSun className="w-4 h-4 mx-auto text-[#DDA15E] mb-1" />
-                <p className="text-xs text-gray-500">Luz solar</p>
+                <p className="text-xs text-gray-500">{t('Luz solar')}</p>
                 <p className="text-sm font-medium text-gray-900">{info.environmental.sunlight}</p>
               </div>
             </div>
@@ -184,14 +186,14 @@ export const PlantInfoDetailPage: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm p-5">
               <div className="flex items-center gap-2 mb-2">
                 <FiCalendar className="w-4 h-4 text-[#283618]" />
-                <h2 className="font-semibold text-gray-900 text-sm">Temporada</h2>
+                <h2 className="font-semibold text-gray-900 text-sm">{t('Temporada')}</h2>
               </div>
               <p className="text-sm text-gray-600">{info.season || 'No especificada'}</p>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-5">
               <div className="flex items-center gap-2 mb-2">
                 <FiMapPin className="w-4 h-4 text-[#283618]" />
-                <h2 className="font-semibold text-gray-900 text-sm">Regiones de Colombia</h2>
+                <h2 className="font-semibold text-gray-900 text-sm">{t('Regiones de Colombia')}</h2>
               </div>
               {info.colombiaRegions?.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
@@ -202,7 +204,7 @@ export const PlantInfoDetailPage: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-400">No especificadas</p>
+                <p className="text-sm text-gray-400">{t('No especificadas')}</p>
               )}
             </div>
           </div>

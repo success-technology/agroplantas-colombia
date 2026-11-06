@@ -8,10 +8,11 @@ interface Message {
   text: string;
 }
 
-const SUPPORT_EMAIL = 'soporte@agroplantascolombia.com';
-const SUPPORT_WHATSAPP = '573001234567';
+const SUPPORT_EMAIL = 'soporteagroplantascolombia@gmail.com';
+const SUPPORT_WHATSAPP = '573222254131';
 const QUICK_QUESTIONS = ['¿Cómo riego mi cultivo?', '¿Qué hago contra las plagas?', 'Necesito soporte'];
 
+/** Responde preguntas frecuentes locales y dirige consultas humanas a soporte. */
 const answerQuestion = (question: string): string => {
   const normalized = question.toLowerCase();
   if (normalized.includes('riego') || normalized.includes('agua')) {
@@ -35,6 +36,7 @@ const answerQuestion = (question: string): string => {
   return 'Puedo orientarte sobre riego, fertilización, plagas, enfermedades y cómo tomar fotos para el diagnóstico. Cuéntame qué cultivo tienes y qué síntomas observas.';
 };
 
+/** Widget flotante de ayuda rápida, preguntas predefinidas y contacto. */
 export const AgroChatbot: React.FC = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -108,7 +110,7 @@ export const AgroChatbot: React.FC = () => {
                   WhatsApp
                 </a>
               </div>
-              <p className="mt-2 break-all text-[10px] text-gray-500 dark:text-gray-400">{SUPPORT_EMAIL} · +57 300 123 4567</p>
+              <p className="mt-2 break-all text-[10px] text-gray-500 dark:text-gray-400">{SUPPORT_EMAIL} · +57 322 2254 131</p>
             </div>
           )}
           <form onSubmit={(event) => { event.preventDefault(); sendMessage(); }} className="flex gap-2 border-t border-gray-100 dark:border-white/10 p-3">

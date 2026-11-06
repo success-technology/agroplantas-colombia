@@ -1,4 +1,4 @@
-"""Preprocesamiento de imágenes alineado con el entrenamiento."""
+"""Preprocesamiento de imágenes alineado con el entrenamiento del clasificador."""
 from __future__ import annotations
 
 import numpy as np

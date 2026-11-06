@@ -7,19 +7,21 @@ Modelos ORM (SQLAlchemy) para la base de datos.
 """
 import datetime
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from database import Base
 
 
 class User(Base):
+    """Cuenta local, perfil y relación con el historial de identificaciones."""
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     nombre = Column(String, nullable=True)
+    nombre_changed_at = Column(DateTime, nullable=True)
     avatar_base64 = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
@@ -28,7 +30,51 @@ class User(Base):
     )
 
 
+class PasswordResetToken(Base):
+    """Token de recuperación almacenado como hash y con vencimiento."""
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token_hash = Column(String(64), unique=True, nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, nullable=False, default=False)
+
+
+class OAuthIdentity(Base):
+    """Vínculo único entre una cuenta local y un proveedor OAuth."""
+    __tablename__ = "oauth_identities"
+    __table_args__ = (UniqueConstraint("provider", "provider_subject", name="uq_oauth_provider_subject"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    provider = Column(String(20), nullable=False)
+    provider_subject = Column(String(255), nullable=False)
+
+
+class GuestPredictionQuota(Base):
+    """Contador legado de invitado, conservado para compatibilidad de esquema."""
+    __tablename__ = "guest_prediction_quotas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    guest_hash = Column(String(64), unique=True, nullable=False, index=True)
+    attempts = Column(Integer, nullable=False, default=0)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+
+
+class AnalysisQuota(Base):
+    """Cuota de análisis por hash de usuario o sesión invitada."""
+    __tablename__ = "analysis_quotas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    subject_hash = Column(String(64), unique=True, nullable=False, index=True)
+    attempts = Column(Integer, nullable=False, default=0)
+    window_started_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
+
+
 class Identification(Base):
+    """Resultado de análisis persistido en el historial de una cuenta."""
     __tablename__ = "identifications"
 
     id = Column(Integer, primary_key=True, index=True)

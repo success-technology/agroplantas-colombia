@@ -6,6 +6,7 @@ interface ModelStatusProps {
   health: HealthStatus;
 }
 
+/** Comunica estado del backend/modelo y disponibilidad de clases reconocidas. */
 export const ModelStatus: React.FC<ModelStatusProps> = ({ health }) => {
   const trained = health.model_trained;
   return (

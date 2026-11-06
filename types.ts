@@ -11,6 +11,7 @@ export interface Recommendation {
   actions: string[];
 }
 
+/** Contratos TypeScript heredados de resultados consumidos por herramientas antiguas. */
 export interface PredictionResult {
   className: string;
   confidence: number;
